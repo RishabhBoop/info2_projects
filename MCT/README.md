@@ -1,144 +1,203 @@
 # Documentation for `field.cpp`
 
-This document provides an overview and explanation of the `field.cpp` file, which implements a `field` class and related functions for managing a game board. The code is written in C++ and is designed for intermediate programmers.
+This document provides detailed documentation for the C++ source file `field.cpp`, which defines the `field` class and related utility functions for managing a checkers game board.
 
 ---
 
 ## Overview
 
-The `field` class represents a single square on a game board. It includes attributes to track the position, ownership, and state of the square, as well as methods to manipulate and display the board. The file also contains utility functions for clearing the screen, printing the board, and listing possible moves.
+`field.cpp` implements the core logic for representing and manipulating individual squares (fields) on an 8x8 checkers board. The `field` class encapsulates the state of a square, including its position, the piece occupying it (if any), and its visual representation. Several utility functions are also provided for board operations like checking bounds, validating moves, printing the board, and clearing the console.
 
 ---
 
 ## Class: `field`
 
-### Attributes
-- **`x`**: The column number (0-7) of the field.
-- **`y`**: The row number (0-7) of the field.
-- **`is_black`**: A boolean indicating if the field is black.
-- **`player`**: An integer representing the player occupying the field (`0` for empty, `1` for Player 1, `2` for Player 2).
-- **`color`**: A string representing the color of the field.
-- **`is_king`**: A boolean indicating if the piece on the field is a king.
-- **`selected`**: A string representing the selection state of the field.
+Represents a single square on the game board.
+
+### Member Variables (Implicit via `piece* myPiece`)
+
+The `field` class contains a pointer `myPiece` to a `piece` object (defined in `field.hpp`). The `piece` object holds the actual state information:
+
+-   **`player`**: `int` - The player occupying the field (`NOPLAYER` (0), `PLAYER1` (1), or `PLAYER2` (2)).
+-   **`is_black`**: `bool` - Indicates if the underlying board square is black (used for board pattern, not piece color).
+-   **`is_king`**: `bool` - `true` if the piece on this field is a king, `false` otherwise.
+-   **`color`**: `const char*` - A C-style string representing the ANSI color code for displaying the piece/field.
+-   **`selected`**: `const char*` - A C-style string representing the ANSI background color code when the field is selected.
+
+### Member Variables (Direct)
+
+-   **`x`**: `int` - The column index (0-7, left to right) of the field.
+-   **`y`**: `int` - The row index (0-7, top to bottom) of the field.
 
 ### Methods
 
-#### Constructor: `field`
-Initializes a field with the given attributes:
+#### Constructor: `field::field`
+
 ```cpp
-field(const int y, const int x, const bool is_black, const int player, const char *color, bool is_king, const char *selected);
+field(const int y, const int x, const bool is_black, const int player, const char *color, bool is_king = false, const char *selected = NOT_SELECTED_FIELD_COLOR);
 ```
 
-Each parameter corresponds to an attribute of the `field` class:
-- **`y`**: The row number of the field (0-7).
-- **`x`**: The column number of the field (0-7).
-- **`is_black`**: A boolean indicating whether the field is black (`true` for black, `false` for white).
-- **`player`**: An integer representing the player occupying the field (`0` for empty, `1` for Player 1, `2` for Player 2).
-- **`color`**: A C-style string representing the color of the field (e.g., "red", "black").
-- **`is_king`**: A boolean indicating whether the piece on the field is a king (`true` for king, `false` otherwise).
-- **`selected`**: A C-style string representing the selection state of the field (e.g., "selected", "unselected").
+-   **Purpose**: Constructs a new `field` object and initializes its associated `piece`.
+-   **Parameters**:
+    -   `y`: `const int` - The row index (0-7).
+    -   `x`: `const int` - The column index (0-7).
+    -   `is_black`: `const bool` - `true` if the underlying board square is black, `false` otherwise.
+    -   `player`: `const int` - The player occupying the field (`NOPLAYER`, `PLAYER1`, or `PLAYER2`).
+    -   `color`: `const char*` - The display color code for the piece/field.
+    -   `is_king`: `bool` (optional, default: `false`) - `true` if the piece is a king.
+    -   `selected`: `const char*` (optional, default: `NOT_SELECTED_FIELD_COLOR`) - The background color code when selected.
+-   **Output**: None. Initializes the `field` object's state.
 
-#### `print_field`
-Prints the details of the current field, including its position, player, and state.
+#### `field::print_field`
 
-#### `tmp_print_any_field`
-Prints the details of any given field object.
+```cpp
+void print_field();
+```
 
-#### `in_bounds`
-Checks if a given row and column are within the valid range of the board (0-7).
+-   **Purpose**: Prints the detailed state of the *current* field object to standard output, including coordinates, player, king status, color codes, etc. Useful for debugging.
+-   **Parameters**: None.
+-   **Output**: Prints formatted field details to the console.
 
-#### `is_empty`
-Checks if a field is empty (i.e., not occupied by any player).
+#### `field::in_bounds`
 
-#### `list_possible_moves`
-Calculates and lists all possible moves for the current field based on the game rules. It considers normal moves and jumps over enemy pieces.
+```cpp
+bool in_bounds(int row, int col);
+```
 
-#### `select`
-Marks the field as selected and updates its color.
+-   **Purpose**: Checks if the given row and column indices are within the valid board boundaries (0-7).
+-   **Parameters**:
+    -   `row`: `int` - The row index to check.
+    -   `col`: `int` - The column index to check.
+-   **Returns**: `bool` - `true` if `0 <= row <= 7` and `0 <= col <= 7`, `false` otherwise.
 
-#### `unselect`
-Unselects the field and resets its color based on its state.
+#### `field::is_empty`
 
-#### `move`
-Moves a piece from the current field to a destination field. If the move involves a jump, it removes the enemy piece.
+```cpp
+bool is_empty(field obj);
+```
+
+-   **Purpose**: Checks if the provided `field` object is empty (i.e., its piece belongs to `NOPLAYER`).
+-   **Parameters**:
+    -   `obj`: `field` - The field object to check.
+-   **Returns**: `bool` - `true` if the field's piece player is `NOPLAYER` (0), `false` otherwise.
+
+#### `field::list_possible_moves`
+
+```cpp
+void list_possible_moves(field board[8][8], vector<int> &possible_moves);
+```
+
+-   **Purpose**: Calculates all valid moves (simple moves and jumps) for the piece currently on *this* field, considering player direction and king status. Appends the found moves to the provided vector.
+-   **Parameters**:
+    -   `board`: `field[8][8]` - The current 8x8 game board state.
+    -   `possible_moves`: `vector<int>&` - A reference to a vector where possible moves will be stored.
+-   **Output**: Modifies the `possible_moves` vector. Each logical move is stored as a sequence of 5 integers:
+    -   `dest_y`: Destination row index.
+    -   `dest_x`: Destination column index.
+    -   `move_type`: `0` for a normal move, `1` for a jump.
+    -   `enemy_y`: Row index of the jumped enemy piece (`-1` if not a jump).
+    -   `enemy_x`: Column index of the jumped enemy piece (`-1` if not a jump).
+
+#### `field::select`
+
+```cpp
+void select();
+```
+
+-   **Purpose**: Marks *this* field as selected by changing its piece's background and foreground color codes for display.
+-   **Parameters**: None.
+-   **Output**: Modifies the `myPiece->selected` and `myPiece->color` attributes of the field.
+
+#### `field::unselect`
+
+```cpp
+void unselect();
+```
+
+-   **Purpose**: Resets the selection state of *this* field, restoring its piece's original display color codes.
+-   **Parameters**: None.
+-   **Output**: Modifies the `myPiece->selected` and `myPiece->color` attributes of the field.
+
+#### `field::move`
+
+```cpp
+void move(int dest_y, int dest_x, field board[8][8], bool jump, int enemy_y, int enemy_x);
+```
+
+-   **Purpose**: Executes a move by transferring the piece from *this* field to the specified destination field on the board. Handles removing jumped enemy pieces and king promotion.
+-   **Parameters**:
+    -   `dest_y`: `int` - The destination row index.
+    -   `dest_x`: `int` - The destination column index.
+    -   `board`: `field[8][8]` - The game board array, which will be modified.
+    -   `jump`: `bool` - `true` if this move is a jump, `false` otherwise.
+    -   `enemy_y`: `int` - The row index of the jumped enemy piece (used only if `jump` is `true`, otherwise ignored, typically `-1`).
+    -   `enemy_x`: `int` - The column index of the jumped enemy piece (used only if `jump` is `true`, otherwise ignored, typically `-1`).
+-   **Output**: Modifies the `board` state:
+    -   The piece from the original field (`this`) is moved to `board[dest_y][dest_x]`.
+    -   The original field (`this`) becomes empty (`NOPLAYER`).
+    -   If `jump` is `true`, the enemy piece at `board[enemy_y][enemy_x]` is removed (set to `NOPLAYER`).
+    -   Checks for and applies king promotion if the piece reaches the opponent's back rank.
 
 ---
 
-## Utility Functions
+## Utility Functions (Standalone)
+
+These functions operate independently of a specific `field` object.
+
+### `is_move_possible`
+
+```cpp
+bool is_move_possible(const vector<int>& possible_moves, int target_y, int target_x);
+```
+
+-   **Purpose**: Checks if a given target coordinate exists as a valid destination within a pre-calculated list of possible moves.
+-   **Parameters**:
+    -   `possible_moves`: `const vector<int>&` - The vector containing possible moves (generated by `field::list_possible_moves`).
+    -   `target_y`: `int` - The target destination row index to check for.
+    -   `target_x`: `int` - The target destination column index to check for.
+-   **Returns**: `bool` - `true` if a move ending at (`target_y`, `target_x`) is found in the `possible_moves` vector, `false` otherwise.
 
 ### `clear_screen`
-Clears the console screen. It uses `system("clear")` for Linux and `system("cls")` for other operating systems.
+
+```cpp
+void clear_screen();
+```
+
+-   **Purpose**: Clears the console screen using system-specific commands (`clear` for Linux/macOS, `cls` for Windows). Relies on the `OS_LINUX` macro definition.
+-   **Parameters**: None.
+-   **Output**: Clears the terminal display.
 
 ### `print_board`
-Prints the entire game board in a human-readable format. Each field is displayed with its player and color.
 
-### `print_board_ncurses` (Conditional)
-Prints the board using the `ncurses` library if the `NCURSES` macro is defined.
+```cpp
+void print_board(field board[8][8]);
+```
+
+-   **Purpose**: Prints the entire 8x8 game board to the console using ANSI color codes defined in the `field` objects. Clears the screen before printing. Includes row and column numbers.
+-   **Parameters**:
+    -   `board`: `field[8][8]` - The 8x8 game board array containing the `field` objects to print.
+-   **Output**: Prints a formatted representation of the game board to the console.
 
 ### `print_possible_moves`
-Prints all possible moves for a given field in a structured format.
 
-## Example Usage
-
-### Creating a Field
 ```cpp
-field myField(0, 0, true, 1, "red", false, "selected");
+void print_possible_moves(int x, int y, vector<int> &possible_moves);
 ```
 
-### Printing a Field
+-   **Purpose**: Prints the list of possible moves (previously calculated for a specific field) to the console in a human-readable format.
+-   **Parameters**:
+    -   `x`: `int` - The column index (0-7) of the field whose moves are being printed (used for display context).
+    -   `y`: `int` - The row index (0-7) of the field whose moves are being printed (used for display context).
+    -   `possible_moves`: `vector<int>&` - The vector containing the possible moves (sequence of 5 integers per move) to be printed.
+-   **Output**: Prints the possible moves, including destination coordinates, move type (normal/jump), and jumped enemy coordinates (if applicable), to the console.
+
+### `has_lost`
+
 ```cpp
-myField.print_field();
+bool has_lost(int player);
 ```
 
-### Listing Possible Moves
-```cpp
-field board[8][8]; // Assume this is initialized
-vector<int> possible_moves;
-myField.list_possible_moves(board, possible_moves);
-```
-
-### Moving a Piece
-
-To move a piece on the board, you can use the `move` method of the `field` class. This method updates the state of the board by moving a piece from the current field to a destination field. It also handles special cases like jumping over an enemy piece.
-
-#### Syntax
-```cpp
-void move(int new_y, int new_x, field board[8][8], bool is_jump, int player, int enemy);
-```
-
-#### Parameters
-- **`new_y`**: The row index of the destination field (0-7).
-- **`new_x`**: The column index of the destination field (0-7).
-- **`board`**: The 2D array representing the game board.
-- **`is_jump`**: A boolean indicating whether the move is a jump over an enemy piece (`true` for jump, `false` otherwise).
-- **`player`**: The integer representing the current player (e.g., `PLAYER1` or `PLAYER2`).
-- **`enemy`**: The integer representing the opposing player.
-
-#### Example Usage
-```cpp
-// Assume the current field is at (2, 3) and the destination is (4, 5)
-int current_y = 2;
-int current_x = 3;
-int destination_y = 4;
-int destination_x = 5;
-bool is_jump = true; // This move involves jumping over an enemy piece
-int player = PLAYER1;
-int enemy = PLAYER2;
-
-// Perform the move
-board[current_y][current_x].move(destination_y, destination_x, board, is_jump, player, enemy);
-```
-
-#### Key Points
-1. **Validation**: Before calling the `move` method, ensure the move is valid by checking the list of possible moves using the `list_possible_moves` method.
-2. **Jumping**: If the move involves a jump, the `move` method will automatically remove the enemy piece from the board.
-3. **State Update**: The method updates the state of both the source and destination fields, including attributes like `player` and `is_king`.
-4. **King Promotion**: If a piece reaches the opposite end of the board, it is promoted to a king. This is handled within the `move` method.
-
-#### Additional Notes
-- The `move` method is a critical part of the game logic and ensures that all rules of the game are followed during a move.
-- Always use the `print_board` function after a move to visually confirm the updated state of the board.
-
----
-
-This documentation should help you understand the purpose and functionality of the `field.cpp` file. If you have further questions, feel free to ask!
+-   **Purpose**: Checks if a given player has lost the game by having no pieces remaining on the board.
+-   **Parameters**:
+    -   `player`: `int` - The player ID to check (1 for PLAYER1, 2 for PLAYER2).
+-   **Returns**: `bool` - `true` if the specified player has 0 pieces left (based on global counters `num_player1_pieces` or `num_player2_pieces`), `false` otherwise.
