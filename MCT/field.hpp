@@ -69,25 +69,29 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 
 using namespace std;
 
+extern int num_player1_pieces;
+extern int num_player2_pieces;
+
+struct piece
+{
+    bool is_black;
+    bool is_king;
+    int player;
+    const char *color;
+    const char *selected;
+};
+
 class field
 {
 public:
     int x;
     int y;
-    bool is_black;
-    bool has_piece;
-    int player;
-    bool is_king;
-    const char *color;
-    const char *selected;
-
+    piece* myPiece;
     field(const int y, const int x, const bool is_black, const int player, const char *color, bool is_king = false, const char *selected = NOT_SELECTED_FIELD_COLOR);
 
     bool is_empty(field obj);
 
     void print_field();
-
-    void tmp_print_any_field(field obj);
 
     bool in_bounds(int row, int col);
 
@@ -99,8 +103,9 @@ public:
 
     void move(int dest_y, int dest_x, field board[8][8], bool jump = false, int enemy_y = 0, int enemy_x = 0);
 };
+
 void clear_screen();
 void print_board(field board[8][8]);
-void print_board_ncurses(field board[8][8]);
 void print_possible_moves(int x, int y, vector<int> &possible_moves);
+bool has_lost(int player);
 #endif
