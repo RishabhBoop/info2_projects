@@ -2,8 +2,7 @@
 
 using namespace std;
 
-int num_player1_pieces = 12;
-int num_player2_pieces = 12;
+int num_player_pieces[2] = {12,12};
 
 /**
  * @brief Constructs a new field object.
@@ -19,17 +18,31 @@ int num_player2_pieces = 12;
  * @param is_king (Optional) True if the piece starts as a king. Defaults to false.
  * @param selected (Optional) The ANSI background color code string for when the field is selected. Defaults to NOT_SELECTED_FIELD_COLOR.
  */
-field::field(const int y, const int x, const bool is_black, const int player, const char *color, bool is_king, const char *selected)
+field::field(const int y, const int x, const bool is_black, int player, const char *color, bool is_king, const char *selected)
 {
     this->x = x; // coloumn number; left to right 0-7
     this->y = y; // row number; top to bottom 0-7
-    this->myPiece = new piece();
-    this->myPiece->player = player;
-    this->myPiece->is_black = is_black;
-    this->myPiece->is_king = is_king;
-    this->myPiece->player = player;
-    this->myPiece->color = color;
-    this->myPiece->selected = selected;
+    this->myPiece.is_black = is_black;
+    this->myPiece.is_king = is_king;
+    if (player == NOPLAYER)
+    {
+        this->myPiece.player.player_id = 0;
+        this->myPiece.player.color = color;
+        this->myPiece.player.selected = selected;
+
+    }
+    else if (player == PLAYER1)
+    {
+        this->myPiece.player.player_id = 1;
+        this->myPiece.player.color = color;
+        this->myPiece.player.selected = selected;
+    }
+    else if (player == PLAYER2)
+    {
+        this->myPiece.player.player_id = 2;
+        this->myPiece.player.color = color;
+        this->myPiece.player.selected = selected;
+    }
 }
 
 /**
@@ -43,15 +56,15 @@ field::field(const int y, const int x, const bool is_black, const int player, co
  */
 void field::print_field()
 {
-    cout << myPiece->color;
+    cout << myPiece.player.color;
     printf("Field [%d, %d]: \n", y + 1, x + 1);
     printf("\t y: %d\n", y);
     printf("\t x: %d\n", x);
-    printf("\t player: %d\n", myPiece->player);
+    printf("\t player: %d\n", myPiece.player.player_id);
     printf("\t is empty: %s\n", is_empty(*this) ? "true" : "false");
-    printf("\t is king: %s\n", myPiece->is_king ? "true" : "false");
-    printf("\t is black: %s\n", myPiece->is_black ? "true" : "false");
-    printf("\t selected: %s\n", myPiece->selected == NOT_SELECTED_FIELD_COLOR ? "false" : "true");
+    printf("\t is king: %s\n", myPiece.is_king ? "true" : "false");
+    printf("\t is black: %s\n", myPiece.is_black ? "true" : "false");
+    printf("\t selected: %s\n", myPiece.player.selected == NOT_SELECTED_FIELD_COLOR ? "false" : "true");
     cout << RESET;
     return;
 }
@@ -75,10 +88,10 @@ bool field::in_bounds(int row, int col)
  * A field is considered empty if its associated piece belongs to NOPLAYER (player ID 0).
  *
  * @param obj The field object to check.
- * @return true If the field is empty (obj.myPiece->player == NOPLAYER).
+ * @return true If the field is empty (obj.myPiece.player == NOPLAYER).
  * @return false If the field is occupied by PLAYER1 or PLAYER2.
  */
-bool field::is_empty(field obj) { return obj.myPiece->player == 0 ? true : false; }
+bool field::is_empty(field obj) { return obj.myPiece.player.player_id == 0 ? true : false; }
 
 /**
  * @brief Calculates all possible moves (including jumps) for the piece on this field.
@@ -98,11 +111,11 @@ bool field::is_empty(field obj) { return obj.myPiece->player == 0 ? true : false
  *                       - enemy_x: Column index of the jumped enemy (-1 if not a jump).
  * @return None (modifies the possible_moves vector directly).
  */
-void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
+void field::list_possible_moves(std::array<std::array<field, 8>, 8>& board, vector<int> &possible_moves)
 {   
     bool jump = false;
     // check for moving down
-    if (myPiece->player == 1 || myPiece->player == 2 && myPiece->is_king)
+    if (myPiece.player.player_id == 1 || myPiece.player.player_id == 2 && myPiece.is_king)
     {
         // new y and x coordinates (move on the board diagonally to the left + bottom) 
         int y_fun = y + 1;
@@ -111,7 +124,7 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
         if (in_bounds(y_fun, x_fun))
         {
             field checking_field = board[y_fun][x_fun];
-            int checking_player = checking_field.myPiece->player;
+            int checking_player = checking_field.myPiece.player.player_id;
             // check if field is empty
             if (is_empty(checking_field))
             {
@@ -122,15 +135,15 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
                 possible_moves.push_back(-1);       // -1 = enemy y doen't exist
                 possible_moves.push_back(-1);       // -1 = enemy x doesn't exist
             }
-            else if (!is_empty(checking_field) && checking_field.myPiece->player == 2)
+            else if (!is_empty(checking_field) && checking_field.myPiece.player.player_id == 2)
             {
                 // if the field is occupied by the enemy
                 int y_fun_j = y_fun + 1;
                 int x_fun_j = x_fun - 1;
                 // check if the field behind the enemy is empty
                 field checking_field = board[y_fun_j][x_fun_j];
-                int checking_player = checking_field.myPiece->player;
-                if (is_empty(checking_field) && checking_field.myPiece->player == 0)
+                int checking_player = checking_field.myPiece.player.player_id;
+                if (is_empty(checking_field) && checking_field.myPiece.player.player_id == 0)
                 {
                     // if the field behind enemy is empty and not occupied by any player
                     possible_moves.push_back(y_fun_j);  // top to bottom
@@ -147,9 +160,9 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
         if (in_bounds(y_fun, x_fun))
         {
             field checking_field = board[y_fun][x_fun];
-            int checking_player = checking_field.myPiece->player;
+            int checking_player = checking_field.myPiece.player.player_id;
             // check if field is empty
-            if (is_empty(checking_field) && checking_field.myPiece->player == 0)
+            if (is_empty(checking_field) && checking_field.myPiece.player.player_id == 0)
             {
                 // if the field is empty and not occupied by any player
                 possible_moves.push_back(y_fun);    // top to bottom
@@ -158,15 +171,15 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
                 possible_moves.push_back(-1);       // -1 = enemy y doen't exist
                 possible_moves.push_back(-1);       // -1 = enemy x doesn't exist
             }
-            else if (!is_empty(checking_field) && checking_field.myPiece->player == 2)
+            else if (!is_empty(checking_field) && checking_field.myPiece.player.player_id == 2)
             {
                 // if the field is occupied by the enemy
                 int y_fun_j = y_fun + 1;
                 int x_fun_j = x_fun + 1;
                 // check if the field behind the enemy is empty
                 field checking_field = board[y_fun_j][x_fun_j];
-                int checking_player = checking_field.myPiece->player;
-                if (is_empty(checking_field) && checking_field.myPiece->player == 0)
+                int checking_player = checking_field.myPiece.player.player_id;
+                if (is_empty(checking_field) && checking_field.myPiece.player.player_id == 0)
                 {
                     // if the field behind the enemy is empty and not occupied by any player
                     possible_moves.push_back(y_fun_j);  // top to bottom
@@ -180,7 +193,7 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
         }
     }
     // check for moving up
-    if (myPiece->player == 2 || myPiece->player == 1 && myPiece->is_king)
+    if (myPiece.player.player_id == 2 || myPiece.player.player_id == 1 && myPiece.is_king)
     {
         // new y and x coordinates (move on the board diagonally to the left + top)
         int y_fun = y - 1;
@@ -188,7 +201,7 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
         if (in_bounds(y_fun, x_fun))
         {
             field checking_field = board[y_fun][x_fun];
-            int checking_player = checking_field.myPiece->player;
+            int checking_player = checking_field.myPiece.player.player_id;
             // check if field is empty
             if (is_empty(checking_field))
             {
@@ -199,15 +212,15 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
                 possible_moves.push_back(-1);       // -1 = enemy y doen't exist
                 possible_moves.push_back(-1);       // -1 = enemy x doesn't exist
             }
-            else if (!is_empty(checking_field) && checking_field.myPiece->player == 1)
+            else if (!is_empty(checking_field) && checking_field.myPiece.player.player_id == 1)
             {
                 // if the field is occupied by the enemy
                 int y_fun_j = y_fun - 1;
                 int x_fun_j = x_fun - 1;
                 // check if the field behind the enemy is empty
                 field checking_field = board[y_fun_j][x_fun_j];
-                int checking_player = checking_field.myPiece->player;
-                if (is_empty(checking_field) && checking_field.myPiece->player == 0)
+                int checking_player = checking_field.myPiece.player.player_id;
+                if (is_empty(checking_field) && checking_field.myPiece.player.player_id == 0)
                 {
                     // if the field behind the enemy is empty and not occupied by any player
                     possible_moves.push_back(y_fun_j);  // top to bottom
@@ -224,9 +237,9 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
         if (in_bounds(y_fun, x_fun))
         {
             field checking_field = board[y_fun][x_fun];
-            int checking_player = checking_field.myPiece->player;
+            int checking_player = checking_field.myPiece.player.player_id;
             // check if field is empty
-            if (is_empty(checking_field) && checking_field.myPiece->player == 0)
+            if (is_empty(checking_field) && checking_field.myPiece.player.player_id == 0)
             {
                 // if the field is empty and not occupied by any player
                 possible_moves.push_back(y_fun);    // top to bottom
@@ -235,15 +248,15 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
                 possible_moves.push_back(-1);       // -1 = enemy y doen't exist
                 possible_moves.push_back(-1);       // -1 = enemy x doesn't exist
             }
-            else if (!is_empty(checking_field) && checking_field.myPiece->player == 1)
+            else if (!is_empty(checking_field) && checking_field.myPiece.player.player_id == 1)
             {
                 // if the field is occupied by the enemy
                 int y_fun_j = y_fun - 1;
                 int x_fun_j = x_fun + 1;
                 // check if the field behind the enemy is empty
                 field checking_field = board[y_fun_j][x_fun_j];
-                int checking_player = checking_field.myPiece->player;
-                if (is_empty(checking_field) && checking_field.myPiece->player == 0)
+                int checking_player = checking_field.myPiece.player.player_id;
+                if (is_empty(checking_field) && checking_field.myPiece.player.player_id == 0)
                 {
                     // if the field behind the enemy is empty and not occupied by any player
                     possible_moves.push_back(y_fun_j);  // top to bottom
@@ -284,19 +297,19 @@ void field::list_possible_moves(field board[8][8], vector<int> &possible_moves)
  */
 void field::select()
 {
-    if (myPiece->player == 1)
+    if (myPiece.player.player_id == 1)
     {
-        myPiece->selected = PLAYER1_COLOR_BG;
+        myPiece.player.selected = PLAYER1_COLOR_BG;
     }
-    else if (myPiece->player == 2)
+    else if (myPiece.player.player_id == 2)
     {
-        myPiece->selected = PLAYER2_COLOR_BG;
+        myPiece.player.selected = PLAYER2_COLOR_BG;
     }
     else
     {
-        myPiece->selected = SELECTED_FIELD_COLOR;
+        myPiece.player.selected = SELECTED_FIELD_COLOR;
     }
-    myPiece->color = BOLDWHITE;
+    myPiece.player.color = BOLDWHITE;
     return;
 }
 
@@ -311,18 +324,18 @@ void field::select()
  */
 void field::unselect()
 {
-    myPiece->selected = NOT_SELECTED_FIELD_COLOR;
-    if (myPiece->player == 1)
+    myPiece.player.selected = NOT_SELECTED_FIELD_COLOR;
+    if (myPiece.player.player_id == 1)
     {
-        myPiece->color = PLAYER1_COLOR;
+        myPiece.player.color = PLAYER1_COLOR;
     }
-    else if (myPiece->player == 2)
+    else if (myPiece.player.player_id == 2)
     {
-        myPiece->color = PLAYER2_COLOR;
+        myPiece.player.color = PLAYER2_COLOR;
     }
     else
     {
-        myPiece->color = EMPTY_FIELD_COLOR;
+        myPiece.player.color = EMPTY_FIELD_COLOR;
     }
     return;
 }
@@ -341,44 +354,43 @@ void field::unselect()
  * @param enemy_x The column index of the enemy piece being jumped (-1 if not a jump).
  * @return None (modifies the board state directly).
  */
-void field::move(int dest_y, int dest_x, field board[8][8], bool jump, int enemy_y, int enemy_x)
+void field::move(int dest_y, int dest_x, std::array<std::array<field, 8>, 8>& board, bool jump, int enemy_y, int enemy_x)
 {
     // if jump, then remove the enemy piece
     if (jump)
     {
-        delete board[enemy_y][enemy_x].myPiece;
         // set enemy field to normal field
-        board[enemy_y][enemy_x].myPiece->color = EMPTY_FIELD_COLOR;
-        board[enemy_y][enemy_x].myPiece->selected = NOT_SELECTED_FIELD_COLOR;
-        board[enemy_y][enemy_x].myPiece->player = 0;
-        board[enemy_y][enemy_x].myPiece->is_black = false;
-        board[enemy_y][enemy_x].myPiece->is_king = false;
+        board[enemy_y][enemy_x].myPiece.player.color = EMPTY_FIELD_COLOR;
+        board[enemy_y][enemy_x].myPiece.player.selected = NOT_SELECTED_FIELD_COLOR;
+        board[enemy_y][enemy_x].myPiece.player.player_id = 0;
+        board[enemy_y][enemy_x].myPiece.is_black = false;
+        board[enemy_y][enemy_x].myPiece.is_king = false;
         // decrement the number of pieces for the player
-        if (myPiece->player == 1)
+        if (myPiece.player.player_id == 1)
         {
-            num_player2_pieces--;
+            num_player_pieces[0]--;
         }
-        else if (myPiece->player == 2)
+        else if (myPiece.player.player_id == 2)
         {
-            num_player1_pieces--;
+            num_player_pieces[1]--;
         }
     }
 
     // store the current piece in a temporary variable
-    piece* myTmpPiece = board[y][x].myPiece;
+    Piece myTmpPiece = board[y][x].myPiece;
     // set the current field to empty (which should be the desination field)
     board[y][x].myPiece = board[dest_y][dest_x].myPiece;
     // set destination field
     board[dest_y][dest_x].myPiece = myTmpPiece;
     
     // promote to king if the piece reaches the last row
-    if (board[dest_y][dest_x].myPiece->player == 1 && dest_y == 7)
+    if (board[dest_y][dest_x].myPiece.player.player_id == 1 && dest_y == 7)
     {
-        board[dest_y][dest_x].myPiece->is_king = true;
+        board[dest_y][dest_x].myPiece.is_king = true;
     }
-    else if (board[dest_y][dest_x].myPiece->player == 2 && dest_y == 0)
+    else if (board[dest_y][dest_x].myPiece.player.player_id == 2 && dest_y == 0)
     {
-        board[dest_y][dest_x].myPiece->is_king = true;
+        board[dest_y][dest_x].myPiece.is_king = true;
     }
 
     return;
@@ -415,7 +427,7 @@ void clear_screen()
  * @param board The 8x8 game board array (containing field objects) to print.
  * @return None
  */
-void print_board(field board[8][8])
+void print_board(std::array<std::array<field, 8>, 8>& board)
 {
     clear_screen();
     cout << "    1   2   3   4   5   6   7   8\n";
@@ -425,7 +437,7 @@ void print_board(field board[8][8])
         cout << i + 1 << " | ";
         for (int j = 0; j < 8; j++)
         {
-            cout  << board[i][j].myPiece->selected << board[i][j].myPiece->color << board[i][j].myPiece->player  << RESET << " | ";
+            cout  << board[i][j].myPiece.player.selected << board[i][j].myPiece.player.color << board[i][j].myPiece.player.player_id  << RESET << " | ";
         }
         cout << endl;
         cout << "  ---------------------------------\n";
@@ -478,22 +490,15 @@ void print_possible_moves(int x, int y, vector<int> &possible_moves)
  */
 bool has_lost(int player)
 {
-    if (player == 1)
+    if (player == 1 && num_player_pieces[1] == 0)
     {
-        if (num_player1_pieces == 0)
-        {
-            return true;
-        }
+        return true;
     }
-    else if (player == 2)
+    else if (player == 2 && num_player_pieces[0] == 0)
     {
-        if (num_player2_pieces == 0)
-        {
-            return true;
-        }
+        return true;
     }
     return false;
 }
-
 
 

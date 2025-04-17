@@ -1,20 +1,13 @@
-#if defined(NCURSES)
-#include <ncurses.h>
-#endif
-
 #ifndef FIELD_HPP
 #define FIELD_HPP
 #include <iostream>
 #include <vector>
-// #include <stdlib.h>         // https://stackoverflow.com/questions/902261/is-there-a-decent-wait-function-in-c
-// #include <time.h>
+#include <array> // Add include for std::array
 
 #ifdef __GNUC__ 
 #define OS_LINUX 1
-// #include <unistd.h>
 #elif defined(_WIN64)
 #define OS_LINUX 0
-// #include <windows.h>
 #endif
 
 /*
@@ -68,26 +61,32 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 #endif
 
 using namespace std;
+// global variable that holds how many pieces each player has
+extern int num_player_pieces[2];
 
-extern int num_player1_pieces;
-extern int num_player2_pieces;
-
-struct piece
+struct Player
 {
-    bool is_black;
-    bool is_king;
-    int player;
+    int player_id;
     const char *color;
     const char *selected;
 };
 
-class field
+struct Piece
+{
+    bool is_black;
+    bool is_king;
+    Player player;
+};
+
+class field //: public GameState
 {
 public:
     int x;
     int y;
-    piece* myPiece;
-    field(const int y, const int x, const bool is_black, const int player, const char *color, bool is_king = false, const char *selected = NOT_SELECTED_FIELD_COLOR);
+
+    Piece myPiece;
+
+    field(const int y, const int x, const bool is_black, int player, const char *color, bool is_king = false, const char *selected = NOT_SELECTED_FIELD_COLOR);
 
     bool is_empty(field obj);
 
@@ -95,17 +94,17 @@ public:
 
     bool in_bounds(int row, int col);
 
-    void list_possible_moves(field board[8][8], vector<int> &possible_moves);
+    void list_possible_moves(std::array<std::array<field, 8>, 8>& board, vector<int> &possible_moves); // Update parameter type
 
     void select();
 
     void unselect();
 
-    void move(int dest_y, int dest_x, field board[8][8], bool jump = false, int enemy_y = 0, int enemy_x = 0);
+    void move(int dest_y, int dest_x, std::array<std::array<field, 8>, 8>& board, bool jump = false, int enemy_y = 0, int enemy_x = 0); // Update parameter type
 };
 
 void clear_screen();
-void print_board(field board[8][8]);
+void print_board(std::array<std::array<field, 8>, 8>& board); // Update parameter type
 void print_possible_moves(int x, int y, vector<int> &possible_moves);
 bool has_lost(int player);
 #endif
