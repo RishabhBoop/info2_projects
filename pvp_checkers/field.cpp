@@ -500,5 +500,3 @@ bool has_lost(int player)
     }
     return false;
 }
-
-
