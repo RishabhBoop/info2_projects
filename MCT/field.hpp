@@ -1,13 +1,10 @@
-#if defined(NCURSES)
-#include <ncurses.h>
-#endif
-
 #ifndef FIELD_HPP
 #define FIELD_HPP
 #include <iostream>
 #include <vector>
 // #include <stdlib.h>         // https://stackoverflow.com/questions/902261/is-there-a-decent-wait-function-in-c
 // #include <time.h>
+#include <optional>
 
 #ifdef __GNUC__ 
 #define OS_LINUX 1
@@ -77,8 +74,6 @@ struct piece
     bool is_black;
     bool is_king;
     int player;
-    const char *color;
-    const char *selected;
 };
 
 class field
@@ -87,6 +82,8 @@ public:
     int x;
     int y;
     piece* myPiece;
+    const char *color;
+    const char *selected;
     field(const int y, const int x, const bool is_black, const int player, const char *color, bool is_king = false, const char *selected = NOT_SELECTED_FIELD_COLOR);
 
     bool is_empty(field obj);

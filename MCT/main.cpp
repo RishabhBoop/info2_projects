@@ -27,29 +27,29 @@ int main()
     cout << PLAYER1_COLOR << "Player 1" << RESET << endl;
     cout << PLAYER2_COLOR << "Player 2" << RESET << endl;
 
-    // board[top to bottom][left to right] = board[y][x]; standard board
-    field board[8][8] = {
-        {field(0, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 1, true, PLAYER1, PLAYER1_COLOR),      field(0, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 3, true, PLAYER1, PLAYER1_COLOR),      field(0, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 5, true, PLAYER1, PLAYER1_COLOR),      field(0, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 7, true, PLAYER1, PLAYER1_COLOR)},
-        {field(1, 0, true, PLAYER1, PLAYER1_COLOR),      field(1, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 2, true, PLAYER1, PLAYER1_COLOR),      field(1, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 4, true, PLAYER1, PLAYER1_COLOR),      field(1, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 6, true, PLAYER1, PLAYER1_COLOR),      field(1, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
-        {field(2, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 1, true, PLAYER1, PLAYER1_COLOR),      field(2, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 3, true, PLAYER1, PLAYER1_COLOR),      field(2, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 5, true, PLAYER1, PLAYER1_COLOR),      field(2, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 7, true, PLAYER1, PLAYER1_COLOR)},
-        {field(3, 0, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 2, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 4, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 6, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
-        {field(4, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 1, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(4, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 3, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(4, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 5, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(4, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
-        {field(5, 0, true, PLAYER2, PLAYER2_COLOR),      field(5, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 2, true, PLAYER2, PLAYER2_COLOR),      field(5, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 4, true,PLAYER2, PLAYER2_COLOR),       field(5, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 6, true, PLAYER2, PLAYER2_COLOR),      field(5, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
-        {field(6, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 1, true, PLAYER2, PLAYER2_COLOR),      field(6, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 3, true, PLAYER2, PLAYER2_COLOR),      field(6, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 5, true, PLAYER2, PLAYER2_COLOR),      field(6, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 7, true, PLAYER2, PLAYER2_COLOR)},
-        {field(7, 0, true, PLAYER2, PLAYER2_COLOR),      field(7, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 2, true, PLAYER2, PLAYER2_COLOR),      field(7, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 4, true, PLAYER2, PLAYER2_COLOR),      field(7, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 6, true, PLAYER2, PLAYER2_COLOR),      field(7, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)}
-    };
-
-    // // Minimal board for testing jumps
+    // // board[top to bottom][left to right] = board[y][x]; standard board
     // field board[8][8] = {
-    //     {field(0, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 1, true, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
-    //     {field(1, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 2, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
-    //     {field(2, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 1, true, PLAYER1, PLAYER1_COLOR), field(2, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
-    //     {field(3, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 2, true, PLAYER2, PLAYER2_COLOR), field(3, 3, false, PLAYER2, PLAYER2_COLOR), field(3, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
-    //     {field(4, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 1, true, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
-    //     {field(5, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 2, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
-    //     {field(6, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 1, true, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
-    //     {field(7, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 2, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)}
+    //     {field(0, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 1, true, PLAYER1, PLAYER1_COLOR),      field(0, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 3, true, PLAYER1, PLAYER1_COLOR),      field(0, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 5, true, PLAYER1, PLAYER1_COLOR),      field(0, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 7, true, PLAYER1, PLAYER1_COLOR)},
+    //     {field(1, 0, true, PLAYER1, PLAYER1_COLOR),      field(1, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 2, true, PLAYER1, PLAYER1_COLOR),      field(1, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 4, true, PLAYER1, PLAYER1_COLOR),      field(1, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 6, true, PLAYER1, PLAYER1_COLOR),      field(1, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
+    //     {field(2, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 1, true, PLAYER1, PLAYER1_COLOR),      field(2, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 3, true, PLAYER1, PLAYER1_COLOR),      field(2, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 5, true, PLAYER1, PLAYER1_COLOR),      field(2, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 7, true, PLAYER1, PLAYER1_COLOR)},
+    //     {field(3, 0, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 2, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 4, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 6, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(3, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
+    //     {field(4, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 1, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(4, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 3, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(4, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 5, true, NOPLAYER, EMPTY_FIELD_COLOR),  field(4, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
+    //     {field(5, 0, true, PLAYER2, PLAYER2_COLOR),      field(5, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 2, true, PLAYER2, PLAYER2_COLOR),      field(5, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 4, true,PLAYER2, PLAYER2_COLOR),       field(5, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 6, true, PLAYER2, PLAYER2_COLOR),      field(5, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
+    //     {field(6, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 1, true, PLAYER2, PLAYER2_COLOR),      field(6, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 3, true, PLAYER2, PLAYER2_COLOR),      field(6, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 5, true, PLAYER2, PLAYER2_COLOR),      field(6, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 7, true, PLAYER2, PLAYER2_COLOR)},
+    //     {field(7, 0, true, PLAYER2, PLAYER2_COLOR),      field(7, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 2, true, PLAYER2, PLAYER2_COLOR),      field(7, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 4, true, PLAYER2, PLAYER2_COLOR),      field(7, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 6, true, PLAYER2, PLAYER2_COLOR),      field(7, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)}
     // };
+
+    // Minimal board for testing jumps
+    field board[8][8] = {
+        {field(0, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 1, true, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(0, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
+        {field(1, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 2, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(1, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
+        {field(2, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 1, true, PLAYER1, PLAYER1_COLOR), field(2, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(2, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
+        {field(3, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 2, true, PLAYER2, PLAYER2_COLOR), field(3, 3, false, PLAYER2, PLAYER2_COLOR), field(3, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(3, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
+        {field(4, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 1, true, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(4, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
+        {field(5, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 2, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(5, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)},
+        {field(6, 0, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 1, true, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 2, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 3, true, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 4, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 5, true, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 6, false, NOPLAYER, EMPTY_FIELD_COLOR), field(6, 7, true, NOPLAYER, EMPTY_FIELD_COLOR)},
+        {field(7, 0, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 1, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 2, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 3, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 4, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 5, false, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 6, true, NOPLAYER, EMPTY_FIELD_COLOR), field(7, 7, false, NOPLAYER, EMPTY_FIELD_COLOR)}
+    };
 
     // // Minimal board for testing king-setting
     // field board[8][8] = {
@@ -77,6 +77,18 @@ int main()
     // };
 
     print_board(board);
+    // ask which player to play
+    cout << "Welcome to Checkers!" << endl;
+    printf("Who do you want to play as? ");
+    printf("Player 1 (1), Player 2 (2): ");
+    int player;
+    cin >> player;
+    if (player != 1 && player != 2)
+    {
+        cout << "invalid input" << endl;
+        return 0;
+    }
+
     bool quit = false;
     while(!quit)
     {
@@ -105,6 +117,12 @@ int main()
             cin >> y_usr;
             x = x_usr - 1;
             y = y_usr - 1;
+            // check if player is allowed to select the field
+            if (board[y][x].myPiece->player != player)
+            {
+                cout << "invalid input: wrong player" << endl;
+                continue;
+            }
             board[y][x].select();
         }
         else
