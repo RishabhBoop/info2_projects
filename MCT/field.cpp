@@ -28,9 +28,8 @@ field::field(const int y, const int x, const bool is_black, const int player, co
     this->myPiece->is_black = is_black;
     this->myPiece->is_king = is_king;
     this->myPiece->player = player;
-    
-    this->color = color;
-    this->selected = selected;
+    this->myPiece->color = color;
+    this->myPiece->selected = selected;
 }
 
 /**
@@ -44,7 +43,7 @@ field::field(const int y, const int x, const bool is_black, const int player, co
  */
 void field::print_field()
 {
-    cout << color;
+    cout << myPiece->color;
     printf("Field [%d, %d]: \n", y + 1, x + 1);
     printf("\t y: %d\n", y);
     printf("\t x: %d\n", x);
@@ -52,7 +51,7 @@ void field::print_field()
     printf("\t is empty: %s\n", is_empty(*this) ? "true" : "false");
     printf("\t is king: %s\n", myPiece->is_king ? "true" : "false");
     printf("\t is black: %s\n", myPiece->is_black ? "true" : "false");
-    printf("\t selected: %s\n", selected == NOT_SELECTED_FIELD_COLOR ? "false" : "true");
+    printf("\t selected: %s\n", myPiece->selected == NOT_SELECTED_FIELD_COLOR ? "false" : "true");
     cout << RESET;
     return;
 }
@@ -287,17 +286,17 @@ void field::select()
 {
     if (myPiece->player == 1)
     {
-        selected = PLAYER1_COLOR_BG;
+        myPiece->selected = PLAYER1_COLOR_BG;
     }
     else if (myPiece->player == 2)
     {
-        selected = PLAYER2_COLOR_BG;
+        myPiece->selected = PLAYER2_COLOR_BG;
     }
     else
     {
-        selected = SELECTED_FIELD_COLOR;
+        myPiece->selected = SELECTED_FIELD_COLOR;
     }
-    color = BOLDWHITE;
+    myPiece->color = BOLDWHITE;
     return;
 }
 
@@ -312,18 +311,18 @@ void field::select()
  */
 void field::unselect()
 {
-    selected = NOT_SELECTED_FIELD_COLOR;
+    myPiece->selected = NOT_SELECTED_FIELD_COLOR;
     if (myPiece->player == 1)
     {
-        color = PLAYER1_COLOR;
+        myPiece->color = PLAYER1_COLOR;
     }
     else if (myPiece->player == 2)
     {
-        color = PLAYER2_COLOR;
+        myPiece->color = PLAYER2_COLOR;
     }
     else
     {
-        color = EMPTY_FIELD_COLOR;
+        myPiece->color = EMPTY_FIELD_COLOR;
     }
     return;
 }
@@ -349,8 +348,8 @@ void field::move(int dest_y, int dest_x, field board[8][8], bool jump, int enemy
     {
         delete board[enemy_y][enemy_x].myPiece;
         // set enemy field to normal field
-        board[enemy_y][enemy_x].color = EMPTY_FIELD_COLOR;
-        board[enemy_y][enemy_x].selected = NOT_SELECTED_FIELD_COLOR;
+        board[enemy_y][enemy_x].myPiece->color = EMPTY_FIELD_COLOR;
+        board[enemy_y][enemy_x].myPiece->selected = NOT_SELECTED_FIELD_COLOR;
         board[enemy_y][enemy_x].myPiece->player = 0;
         board[enemy_y][enemy_x].myPiece->is_black = false;
         board[enemy_y][enemy_x].myPiece->is_king = false;
@@ -426,7 +425,7 @@ void print_board(field board[8][8])
         cout << i + 1 << " | ";
         for (int j = 0; j < 8; j++)
         {
-            cout  << board[i][j].selected << board[i][j].color << board[i][j].myPiece->player  << RESET << " | ";
+            cout  << board[i][j].myPiece->selected << board[i][j].myPiece->color << board[i][j].myPiece->player  << RESET << " | ";
         }
         cout << endl;
         cout << "  ---------------------------------\n";
