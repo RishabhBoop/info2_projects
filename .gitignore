@@ -31,3 +31,9 @@
 *.out
 *.app
 */checkers
+
+# Build directories
+build/
+
+# doxygen
+*/html

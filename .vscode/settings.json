@@ -44,7 +44,9 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "fstream": "cpp",
+        "cstring": "cpp"
     },
     "cmake.sourceDirectory": "/home/rishabh/info2_projects/MCTS_checkers"
 }

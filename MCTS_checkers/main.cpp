@@ -1,54 +1,77 @@
-#include "state.hpp"
+#include "classes.hpp"
+#include "mcts_algorithm.hpp"
+#ifdef TESTING
+#include "tests.hpp"
+#endif
+#include <chrono>
 
 using namespace std;
 
 int main()
 {
-    // board[top to bottom][left to right] = board[y][x]; standard board
-    array<array<Piece, 8>, 8> board = {{{Piece(NOPLAYER, 0, 0), Piece(PLAYER1, 1, 0), Piece(NOPLAYER, 2, 0), Piece(PLAYER1, 3, 0), Piece(NOPLAYER, 4, 0), Piece(PLAYER1, 5, 0), Piece(NOPLAYER, 6, 0), Piece(PLAYER1, 7, 0)},
-                                        {Piece(PLAYER1, 0, 1), Piece(NOPLAYER, 1, 1), Piece(PLAYER1, 2, 1), Piece(NOPLAYER, 3, 1), Piece(PLAYER1, 4, 1), Piece(NOPLAYER, 5, 1), Piece(PLAYER1, 6, 1), Piece(NOPLAYER, 7, 1)},
-                                        {Piece(NOPLAYER, 0, 2), Piece(PLAYER1, 1, 2), Piece(NOPLAYER, 2, 2), Piece(PLAYER1, 3, 2), Piece(NOPLAYER, 4, 2), Piece(PLAYER1, 5, 2), Piece(NOPLAYER, 6, 2), Piece(PLAYER1, 7, 2)},
-                                        {Piece(NOPLAYER, 0, 3), Piece(NOPLAYER, 1, 3), Piece(NOPLAYER, 2, 3), Piece(NOPLAYER, 3, 3), Piece(NOPLAYER, 4, 3), Piece(NOPLAYER, 5, 3), Piece(NOPLAYER, 6, 3), Piece(NOPLAYER, 7, 3)},
-                                        {Piece(NOPLAYER, 0, 4), Piece(NOPLAYER, 1, 4), Piece(NOPLAYER, 2, 4), Piece(NOPLAYER, 3, 4), Piece(NOPLAYER, 4, 4), Piece(NOPLAYER, 5, 4), Piece(NOPLAYER, 6, 4), Piece(NOPLAYER, 7, 4)},
-                                        {Piece(PLAYER2, 0, 5), Piece(NOPLAYER, 1, 5), Piece(PLAYER2, 2, 5), Piece(NOPLAYER, 3, 5), Piece(PLAYER2, 4, 5), Piece(NOPLAYER, 5, 5), Piece(PLAYER2, 6, 5), Piece(NOPLAYER, 7, 5)},
-                                        {Piece(NOPLAYER, 0, 6), Piece(PLAYER2, 1, 6), Piece(NOPLAYER, 2, 6), Piece(PLAYER2, 3, 6), Piece(NOPLAYER, 4, 6), Piece(PLAYER2, 5, 6), Piece(NOPLAYER, 6, 6), Piece(PLAYER2, 7, 6)},
-                                        {Piece(PLAYER2, 0, 7), Piece(NOPLAYER, 1, 7), Piece(PLAYER2, 2, 7), Piece(NOPLAYER, 3, 7), Piece(PLAYER2, 4, 7), Piece(NOPLAYER, 5, 7), Piece(PLAYER2, 6, 7), Piece(NOPLAYER, 7, 7)}}};
 
-    // Minimal board for testing jumps
-    array<array<Piece, 8>, 8> m_board_j = {{{Piece(NOPLAYER, 0, 0), Piece(NOPLAYER, 1, 0), Piece(NOPLAYER, 2, 0), Piece(NOPLAYER, 3, 0), Piece(NOPLAYER, 4, 0), Piece(NOPLAYER, 5, 0), Piece(NOPLAYER, 6, 0), Piece(NOPLAYER, 7, 0)},
-                                            {Piece(NOPLAYER, 0, 1), Piece(NOPLAYER, 1, 1), Piece(NOPLAYER, 2, 1), Piece(NOPLAYER, 3, 1), Piece(NOPLAYER, 4, 1), Piece(NOPLAYER, 5, 1), Piece(NOPLAYER, 6, 1), Piece(NOPLAYER, 7, 1)},
-                                            {Piece(NOPLAYER, 0, 2), Piece(PLAYER1, 1, 2), Piece(NOPLAYER, 2, 2), Piece(NOPLAYER, 3, 2), Piece(NOPLAYER, 4, 2), Piece(NOPLAYER, 5, 2), Piece(NOPLAYER, 6, 2), Piece(NOPLAYER, 7, 2)},
-                                            {Piece(NOPLAYER, 0, 3), Piece(NOPLAYER, 1, 3), Piece(PLAYER2, 2, 3), Piece(PLAYER2, 3, 3), Piece(NOPLAYER, 4, 3), Piece(NOPLAYER, 5, 3), Piece(NOPLAYER, 6, 3), Piece(NOPLAYER, 7, 3)},
-                                            {Piece(NOPLAYER, 0, 4), Piece(NOPLAYER, 1, 4), Piece(NOPLAYER, 2, 4), Piece(NOPLAYER, 3, 4), Piece(NOPLAYER, 4, 4), Piece(NOPLAYER, 5, 4), Piece(NOPLAYER, 6, 4), Piece(NOPLAYER, 7, 4)},
-                                            {Piece(NOPLAYER, 0, 5), Piece(NOPLAYER, 1, 5), Piece(NOPLAYER, 2, 5), Piece(NOPLAYER, 3, 5), Piece(NOPLAYER, 4, 5), Piece(NOPLAYER, 5, 5), Piece(NOPLAYER, 6, 5), Piece(NOPLAYER, 7, 5)},
-                                            {Piece(NOPLAYER, 0, 6), Piece(NOPLAYER, 1, 6), Piece(NOPLAYER, 2, 6), Piece(NOPLAYER, 3, 6), Piece(NOPLAYER, 4, 6), Piece(NOPLAYER, 5, 6), Piece(NOPLAYER, 6, 6), Piece(NOPLAYER, 7, 6)},
-                                            {Piece(NOPLAYER, 0, 7), Piece(NOPLAYER, 1, 7), Piece(NOPLAYER, 2, 7), Piece(NOPLAYER, 3, 7), Piece(NOPLAYER, 4, 7), Piece(NOPLAYER, 5, 7), Piece(NOPLAYER, 6, 7), Piece(NOPLAYER, 7, 7)}}};
+#ifdef DEBUG
+    printf("Debug mode\n");
+#endif
 
-    // Minimal board for testing king-setting
-    array<array<Piece, 8>, 8> m_board_k = {{{Piece(NOPLAYER, 0, 0), Piece(NOPLAYER, 1, 0), Piece(NOPLAYER, 2, 0), Piece(NOPLAYER, 3, 0), Piece(NOPLAYER, 4, 0), Piece(NOPLAYER, 5, 0), Piece(NOPLAYER, 6, 0), Piece(NOPLAYER, 7, 0)},
-                                            {Piece(NOPLAYER, 0, 1), Piece(NOPLAYER, 1, 1), Piece(PLAYER2, 2, 1), Piece(NOPLAYER, 3, 1), Piece(NOPLAYER, 4, 1), Piece(NOPLAYER, 5, 1), Piece(NOPLAYER, 6, 1), Piece(NOPLAYER, 7, 1)}, // Player 2 piece on row 1 (index 1)
-                                            {Piece(NOPLAYER, 0, 2), Piece(NOPLAYER, 1, 2), Piece(NOPLAYER, 2, 2), Piece(NOPLAYER, 3, 2), Piece(NOPLAYER, 4, 2), Piece(NOPLAYER, 5, 2), Piece(NOPLAYER, 6, 2), Piece(NOPLAYER, 7, 2)},
-                                            {Piece(NOPLAYER, 0, 3), Piece(NOPLAYER, 1, 3), Piece(NOPLAYER, 2, 3), Piece(NOPLAYER, 3, 3), Piece(NOPLAYER, 4, 3), Piece(NOPLAYER, 5, 3), Piece(NOPLAYER, 6, 3), Piece(NOPLAYER, 7, 3)},
-                                            {Piece(NOPLAYER, 0, 4), Piece(NOPLAYER, 1, 4), Piece(NOPLAYER, 2, 4), Piece(NOPLAYER, 3, 4), Piece(NOPLAYER, 4, 4), Piece(NOPLAYER, 5, 4), Piece(NOPLAYER, 6, 4), Piece(NOPLAYER, 7, 4)},
-                                            {Piece(NOPLAYER, 0, 5), Piece(NOPLAYER, 1, 5), Piece(NOPLAYER, 2, 5), Piece(NOPLAYER, 3, 5), Piece(NOPLAYER, 4, 5), Piece(NOPLAYER, 5, 5), Piece(NOPLAYER, 6, 5), Piece(NOPLAYER, 7, 5)},
-                                            {Piece(NOPLAYER, 0, 6), Piece(PLAYER1, 1, 6), Piece(NOPLAYER, 2, 6), Piece(NOPLAYER, 3, 6), Piece(NOPLAYER, 4, 6), Piece(NOPLAYER, 5, 6), Piece(NOPLAYER, 6, 6), Piece(NOPLAYER, 7, 6)}, // Player 1 piece on row 6 (index 6)
-                                            {Piece(NOPLAYER, 0, 7), Piece(NOPLAYER, 1, 7), Piece(NOPLAYER, 2, 7), Piece(NOPLAYER, 3, 7), Piece(NOPLAYER, 4, 7), Piece(NOPLAYER, 5, 7), Piece(NOPLAYER, 6, 7), Piece(NOPLAYER, 7, 7)}}};
+#ifdef TESTING
+    printf("Testing mode\n");
+    return all_tests();
+#endif
 
-    // Minimal board for testing win/lose
-    array<array<Piece, 8>, 8> m_board_w = {{{Piece(NOPLAYER, 0, 0), Piece(NOPLAYER, 1, 0), Piece(NOPLAYER, 2, 0), Piece(NOPLAYER, 3, 0), Piece(NOPLAYER, 4, 0), Piece(NOPLAYER, 5, 0), Piece(NOPLAYER, 6, 0), Piece(NOPLAYER, 7, 0)},
-                                            {Piece(NOPLAYER, 0, 1), Piece(NOPLAYER, 1, 1), Piece(NOPLAYER, 2, 1), Piece(NOPLAYER, 3, 1), Piece(NOPLAYER, 4, 1), Piece(NOPLAYER, 5, 1), Piece(NOPLAYER, 6, 1), Piece(NOPLAYER, 7, 1)},
-                                            {Piece(NOPLAYER, 0, 2), Piece(PLAYER1, 1, 2), Piece(NOPLAYER, 2, 2), Piece(NOPLAYER, 3, 2), Piece(NOPLAYER, 4, 2), Piece(NOPLAYER, 5, 2), Piece(NOPLAYER, 6, 2), Piece(NOPLAYER, 7, 2)},
-                                            {Piece(NOPLAYER, 0, 3), Piece(NOPLAYER, 1, 3), Piece(PLAYER2, 2, 3), Piece(NOPLAYER, 3, 3), Piece(NOPLAYER, 4, 3), Piece(NOPLAYER, 5, 3), Piece(NOPLAYER, 6, 3), Piece(NOPLAYER, 7, 3)},
-                                            {Piece(NOPLAYER, 0, 4), Piece(NOPLAYER, 1, 4), Piece(NOPLAYER, 2, 4), Piece(NOPLAYER, 3, 4), Piece(NOPLAYER, 4, 4), Piece(NOPLAYER, 5, 4), Piece(NOPLAYER, 6, 4), Piece(NOPLAYER, 7, 4)},
-                                            {Piece(NOPLAYER, 0, 5), Piece(NOPLAYER, 1, 5), Piece(NOPLAYER, 2, 5), Piece(NOPLAYER, 3, 5), Piece(NOPLAYER, 4, 5), Piece(NOPLAYER, 5, 5), Piece(NOPLAYER, 6, 5), Piece(NOPLAYER, 7, 5)},
-                                            {Piece(NOPLAYER, 0, 6), Piece(NOPLAYER, 1, 6), Piece(NOPLAYER, 2, 6), Piece(NOPLAYER, 3, 6), Piece(NOPLAYER, 4, 6), Piece(NOPLAYER, 5, 6), Piece(NOPLAYER, 6, 6), Piece(NOPLAYER, 7, 6)},
-                                            {Piece(NOPLAYER, 0, 7), Piece(NOPLAYER, 1, 7), Piece(NOPLAYER, 2, 7), Piece(NOPLAYER, 3, 7), Piece(NOPLAYER, 4, 7), Piece(NOPLAYER, 5, 7), Piece(NOPLAYER, 6, 7), Piece(NOPLAYER, 7, 7)}}};
+    printf("Welcome to checkers\n");
+    // load the tree from file and reconstruct tree
+    ifstream input_file("mcts_tree.txt");
+    MCTS_leaf *mcts_tree;
+    if (input_file.is_open())
+    {
+        cout << "loading tree from file...\n";
+        string raw_input;
+        getline(input_file, raw_input);
+        mcts_tree = load_tree(raw_input);
+    }
+    else
+    {
+        cout << "no tree found, creating new tree...\n";
+        // create new tree node
+        Board board = create_board("default");
+        GameState game_state = GameState(board, PLAYER1);
+        mcts_tree = new MCTS_leaf(game_state, Move(-1, -1, -1, -1, false, -1, -1), nullptr, {}, 0, 0, true, false);
+    }
 
-    GameState init(Board(board), 1);
-    GameState test_jumps(Board(m_board_j), 1);
-    GameState test_king(Board(m_board_k), 1);
-    GameState test_win(Board(m_board_w), 1);
+    // run mcts algorithm
+#ifdef DEBUG
+    printf("-------------------------------------- STARTING TRAINING --------------------------------------\n");
+#endif
+    auto start = chrono::high_resolution_clock::now();
+    train(mcts_tree, 1000000);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+#ifdef DEBUG
+    printf("-------------------------------------- TRAINING DONE --------------------------------------\n");
+#endif
+    cout << "simulated " << mcts_tree->total_games << " games!" << endl;
+    cout << "training took " << duration.count() << " ms" << endl;
+    // save tree to file
+    ofstream output_file("mcts_tree.txt");
+    if (output_file.is_open())
+    {
+        save_tree(mcts_tree, output_file);
+        output_file.close();
+    }
+    else
+    {
+        cout << "Unable to open file\n";
+    }
+#ifdef DEBUG
+    printf("saved tree to file!\n");
+#endif
+    // destroy the tree
+    destroy_tree(mcts_tree);
+#ifdef DEBUG
+    printf("Tree destroyed!\n");
+#endif
 
-    init.get_board().print_Board();
+    printf("goodbye!\n");
     return 0;
 }
