@@ -99,22 +99,56 @@ MCTS_leaf* load_leaf(string params,MCTS_leaf*);
  * The first node (root node) saves everything (gamestate, board, ...).
  * The rest of the nodes just save the moves (and other metadata), because the gamestate can then be reconstructed from the root node.
  * @param root_node The root node of the MCTS tree. 
+ * @param out The output stream to write the tree data to.
  */
 void save_tree(MCTS_leaf*,ofstream&);
 
 /**
  * @brief loads tree from a file
  * @param string The whole, unfiltered input file as a string.
- * @param root_node The root node of the MCTS tree to populate with the loaded data.
+ * @return Pointer to the root node of the loaded tree.
  */
 MCTS_leaf* load_tree(string);
 
+/**
+ * @brief deletes the whole tree, freeing up the used memory
+ * @param root_node The root node of the MCTS tree.
+ */
 void destroy_tree(MCTS_leaf*);
 
-void compare_trees(MCTS_leaf*, MCTS_leaf*);
-
+/**
+ * @brief Function to load a tree from a string.
+ * Recursively reconstructs the MCTS tree from the string
+ * @param root_node The parent node to which the new leaf will be added.
+ * @param full_input The input string containing the leaf node data.
+ * @throws runtime_error if any of the data is invalid.
+ * @note This is a helper function for `load_tree`.
+ * @return MCTS_leaf* 
+ */
 MCTS_leaf *load_tree_helper(MCTS_leaf*, string&);
 
+/**
+ * @brief Creates a board based on the given string.
+ * @param choice defaults to "default" if no string is passed.
+ * The string can be "default", "jump-test", "king-test", "win-test"
+ * @throw runtime_error if the string is not valid and returns an empty board.
+ * @return array<array<Piece, 8>, 8> 
+ */
 array<array<Piece, 8>, 8> create_board(string);
+
+/**
+ * @brief Clears the console screen.
+ * Uses `clear` on Linux/macOS and `cls` on Windows.
+ */
+void clear_screen();
+
+/**
+ * @brief Function to compare two MCTS trees.
+ * @param tree1 Pointer to the first MCTS tree.
+ * @param tree2 Pointer to the second MCTS tree.
+ * @throws runtime_error if the trees are not identical.
+ * @note only used for testing purposes
+ */
+void compare_trees(MCTS_leaf*, MCTS_leaf*);
 
 #endif

@@ -14,6 +14,8 @@ int test_jump();
 
 int test_king();
 
+int test_win();
+
 void compare_trees(MCTS_leaf *, MCTS_leaf *);
 
 #endif

@@ -23,7 +23,7 @@ bool Piece::is_empty() const
     }
 }
 
-void Piece::select()
+void Piece::select(int ey, int ex)
 {
     int id = get_id();
     // set color based on player id
@@ -35,9 +35,15 @@ void Piece::select()
     {
         set_selected(PLAYER2_COLOR_BG);
     }
-    else
+    else if (id == 0)
     {
         set_selected(SELECTED_FIELD_COLOR);
+        set_color(BOLDBLACK);
+        return;
+    }
+    else if (ey != -1 && ex != -1)
+    {
+        set_selected(BGRED);
     }
 
     set_color(BOLDWHITE);
@@ -136,19 +142,6 @@ void Board::set_piece(int y, int x, const Piece& piece)
     }
 }
 
-void Board::clear_screen()
-{
-    if (OS_LINUX)
-    {
-        (void)system("clear"); // signifies that i am ignoring the return value
-    }
-    else if (OS_LINUX == 0)
-    {
-        (void)system("cls"); // signifies that i am ignoring the return value
-    }
-    return;
-}
-
 void Board::print_Board()
 {
     // #ifndef DEBUG
@@ -185,10 +178,23 @@ string Board::get_board_info()
         return s;
     }
 
+void Move::print_move()
+{
+    printf("From [%d, %d] to [%d, %d]", src_x+1, src_y+1, dest_x+1, dest_y+1);
+    if (jump)
+    {
+        printf(" while eliminating [%d, %d]", enemy_x+1, enemy_y+1);
+    }
+    printf("\n");
+    return;
+}
+
 void GameState::print_all_moves()
 {
+    cout << "Possible moves:\n";
     for (int i = 0; i < possible_moves.size(); i++)
     {
+        cout << "\t" << i+1 << ". ";
         possible_moves[i].print_move();
     }
 }
@@ -202,7 +208,7 @@ void GameState::list_all_possible_moves(int player)
     {
         for (int j = 0; j < 8; j++)
         {
-            if (!board.get_Piece(i, j).is_empty() && board.get_Piece(i, j).get_id() == player)
+            if (!board.clone_Piece(i, j).is_empty() && board.clone_Piece(i, j).get_id() == player)
             {
                 list_possible_moves(j, i);
             }
@@ -213,7 +219,7 @@ void GameState::list_all_possible_moves(int player)
 void GameState::list_possible_moves(int from_x, int from_y)
 {
     bool jump = false;
-    Piece current_piece = board.get_Piece(from_y, from_x);
+    Piece current_piece = board.clone_Piece(from_y, from_x);
     int player = current_piece.get_id();
     int enemy = player == PLAYER1 ? PLAYER2 : PLAYER1;
 
@@ -252,7 +258,7 @@ void GameState::list_possible_moves(int from_x, int from_y)
         // check if the new position is in bounds
         if (current_piece.in_bounds(new_y, new_x))
         {
-            Piece new_piece = board.get_Piece(new_y, new_x);
+            Piece new_piece = board.clone_Piece(new_y, new_x);
             // check if the new position is empty
             if (new_piece.is_empty())
             {
@@ -267,7 +273,7 @@ void GameState::list_possible_moves(int from_x, int from_y)
                 int jump_x = new_x + dx;
                 if (current_piece.in_bounds(jump_y, jump_x))
                 {
-                    Piece jump_piece = board.get_Piece(jump_y, jump_x);
+                    Piece jump_piece = board.clone_Piece(jump_y, jump_x);
                     // check if the next position is empty
                     if (jump_piece.is_empty())
                     {
@@ -304,7 +310,7 @@ GameState GameState::clone() const
         for (int j = 0; j < 8; j++) // for each column in that row
         {
             // copy the piece from the original board to the new board
-            new_board[i][j] = board.get_Piece(i, j);
+            new_board[i][j] = board.clone_Piece(i, j);
         }
     }
     GameState new_game_state(new_board, current_player, possible_moves);
@@ -314,17 +320,39 @@ GameState GameState::clone() const
 int GameState::TerminalState()
 {
     // Generate all possible moves for the current player.
-    // WARNING: This modifies the internal 'possible_moves' member.
     list_all_possible_moves(current_player);
 
-    // Check if the current player has any pieces left OR any possible moves.
-    if (board.get_num_players(current_player) == 0 || possible_moves.empty())
+    // // Check if the current player has any pieces left OR any possible moves.
+    // if (board.get_num_players(current_player) == 0 || possible_moves.empty())
+    // {
+    //     // Current player has no pieces or no moves, so they lose. The other player wins.
+    //     return (current_player == PLAYER1) ? PLAYER2 : PLAYER1;
+    // }
+    int player1_pieces = board.get_num_players(PLAYER1);
+    int player2_pieces = board.get_num_players(PLAYER2);
+    if (player2_pieces == 0)
     {
-        // Current player has no pieces or no moves, so they lose. The other player wins.
-        return (current_player == PLAYER1) ? PLAYER2 : PLAYER1;
+        // Player 1 wins
+        return PLAYER1;
     }
-
-    // Game is not over
+    else if (player1_pieces == 0)
+    {
+        // Player 2 wins
+        return PLAYER2;
+    }
+    list_all_possible_moves(PLAYER2);
+    if (possible_moves.empty())
+    {
+        // Player 2 has no moves, so Player 1 wins.
+        return PLAYER1;
+    }
+    list_all_possible_moves(PLAYER1);
+    if (possible_moves.empty())
+    {
+        // Player 1 has no moves, so Player 2 wins.
+        return PLAYER2;
+    }
+    // If neither player has lost, return -1 to indicate the game is still ongoing.
     return -1;
 }
 
@@ -339,21 +367,10 @@ string GameState::get_state_info()
         return s;
     }
 
-void Move::print_move()
-{
-    printf("From [%d, %d] to [%d, %d]", src_x+1, src_y+1, dest_x+1, dest_y+1);
-    if (jump)
-    {
-        printf(" while eliminating [%d, %d]", enemy_x+1, enemy_y+1);
-    }
-    printf("\n");
-    return;
-}
-
 void Move::perform_move(Board* b, Move mv)
 {
     // Get the piece which is being moved
-    Piece moving_piece = b->get_Piece(mv.src_y, mv.src_x);
+    Piece moving_piece = b->clone_Piece(mv.src_y, mv.src_x);
     int player_id = moving_piece.get_id();
 
     // Create an empty piece to clear squares

@@ -232,6 +232,7 @@ void train(MCTS_leaf *root_node, int num_iterations)
         printf("----- Iteration %d complete -----\n", i);
         #endif
     }
+    return;
 }
 
 void save_tree(MCTS_leaf *root_node, ofstream &out)
@@ -324,11 +325,6 @@ MCTS_leaf *load_tree_helper(MCTS_leaf *root_node, string &full_input)
 MCTS_leaf * load_tree(string full_input)
 {
     MCTS_leaf* root_node = nullptr;
-    // ensure root_node is null
-    if (root_node != nullptr)
-    {
-        throw runtime_error("Root node is null.");
-    }
     try
     {
         root_node = load_tree_helper(root_node, full_input);
@@ -342,6 +338,7 @@ MCTS_leaf * load_tree(string full_input)
         {
             destroy_tree(root_node);
         }
+        return nullptr;
     }
 }
 
@@ -388,7 +385,7 @@ array<array<Piece, 8>, 8> create_board(string choice)
                                                 {Piece(NOPLAYER, 0, 7), Piece(NOPLAYER, 1, 7), Piece(NOPLAYER, 2, 7), Piece(NOPLAYER, 3, 7), Piece(NOPLAYER, 4, 7), Piece(NOPLAYER, 5, 7), Piece(NOPLAYER, 6, 7), Piece(NOPLAYER, 7, 7)}}};
         return m_board_k;
     }
-    else if (choice == "test-win")
+    else if (choice == "win-test")
     {
         // Minimal board for testing win/lose
         array<array<Piece, 8>, 8> m_board_w = {{{Piece(NOPLAYER, 0, 0), Piece(NOPLAYER, 1, 0), Piece(NOPLAYER, 2, 0), Piece(NOPLAYER, 3, 0), Piece(NOPLAYER, 4, 0), Piece(NOPLAYER, 5, 0), Piece(NOPLAYER, 6, 0), Piece(NOPLAYER, 7, 0)},
@@ -415,4 +412,22 @@ array<array<Piece, 8>, 8> create_board(string choice)
 
         return root_board;
     }
+    else
+    {
+        throw runtime_error("Invalid board choice.");
+        return {};
+    }
+}
+
+void clear_screen()
+{
+    if (OS_LINUX)
+    {
+        (void)system("clear"); // signifies that i am ignoring the return value
+    }
+    else if (OS_LINUX == 0)
+    {
+        (void)system("cls"); // signifies that i am ignoring the return value
+    }
+    return;
 }

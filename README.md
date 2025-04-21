@@ -1,5 +1,7 @@
 # Info2 Projects
 This is a repo for all of my Info2 Project code for the Semester SS25
-## MCT
+## MCT_checkers
 This Project implements the Monte Carlo Search Tree algorithm for the game "checkers".
+## pvp_checkers
+This is an outdated version. Originally created because i was bored in info1, it only supports player-vs-player.
 ## 2nd Project

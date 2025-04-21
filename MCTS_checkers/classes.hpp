@@ -15,7 +15,6 @@
 #include <string>
 #include <cstring>
 
-
 /** @def OS_LINUX
  *  @brief Macro defined as 1 if compiling on Linux (GCC), 0 otherwise (assuming Windows). Used for OS-specific commands like clearing the screen.
  */
@@ -24,7 +23,6 @@
 #elif defined(_WIN64)
 #define OS_LINUX 0
 #endif
-
 
 /*
 https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
@@ -155,10 +153,10 @@ public:
      */
     Move(int src_x = -1, int src_y = -1, int dest_x = -1, int dest_y = -1, bool jump = false, int enemy_x = -1, int enemy_y = -1) : src_x(src_x), src_y(src_y), dest_x(dest_x), dest_y(dest_y), jump(jump), enemy_x(enemy_x), enemy_y(enemy_y) {}
 
-    int get_src_x() const { return src_x; }   /**< @return Source column (0-7). */
-    int get_src_y() const { return src_y; }   /**< @return Source row (0-7). */
-    int get_dest_x() const { return dest_x; } /**< @return Destination column (0-7). */
-    int get_dest_y() const { return dest_y; } /**< @return Destination row (0-7). */
+    int get_src_x() const { return src_x; }     /**< @return Source column (0-7). */
+    int get_src_y() const { return src_y; }     /**< @return Source row (0-7). */
+    int get_dest_x() const { return dest_x; }   /**< @return Destination column (0-7). */
+    int get_dest_y() const { return dest_y; }   /**< @return Destination row (0-7). */
     int get_enemy_x() const { return enemy_x; } /**< @return Column of the jumped piece (-1 if not a jump). */
     int get_enemy_y() const { return enemy_y; } /**< @return Row of the jumped piece (-1 if not a jump). */
 
@@ -184,7 +182,7 @@ public:
      * @param b Pointer to the Board object to perform the move on.
      * @param mv The Move object describing the move to perform.
      */
-    void perform_move(Board* b, Move mv);
+    void perform_move(Board *b, Move mv);
 
     string get_move_info();
 };
@@ -244,7 +242,7 @@ public:
      * @brief Sets the piece's appearance to indicate it is selected.
      * Changes the background color based on the player ID and sets the foreground color to bold white.
      */
-    void select();
+    void select(int,int);
     /**
      * @brief Resets the piece's appearance to its default (deselected) state.
      * Restores the original player color and default background color.
@@ -270,8 +268,8 @@ public:
 
     /**
      * @brief returns all of the piece's information in a string format for saving to a file.
-     * 
-     * @return string 
+     *
+     * @return string
      */
     string info_to_file();
 };
@@ -306,9 +304,11 @@ public:
      * @brief Gets the Piece at the specified coordinates.
      * @param y Row coordinate (0-7).
      * @param x Column coordinate (0-7).
-     * @return A copy of the Piece at the given location.
+     * @return A pointer to the Piece at the given location.
      */
-    Piece get_Piece(int y, int x) const { return board[y][x]; };
+    Piece* get_Piece(int y, int x) { return &(board[y][x]); };
+
+    Piece clone_Piece(int y, int x) const { return board[y][x]; } /**< @return A copy of the Piece at the given location. */
 
     /**
      * @brief Prints the current state of the board to the console.
@@ -317,21 +317,15 @@ public:
     void print_Board();
 
     /**
-     * @brief Clears the console screen.
-     * Uses `clear` on Linux/macOS and `cls` on Windows.
-     */
-    void clear_screen();
-
-    /**
      * @brief Places a piece at the specified coordinates on the board.
      * Updates the piece counts for the players based on the new piece.
      * @param y Row coordinate (0-7).
      * @param x Column coordinate (0-7).
      * @param piece The Piece object to place at the location.
-     * @note This function is usually used for removing pieces from the board 
+     * @note This function is usually used for removing pieces from the board
      * TODO: rename function
      */
-    void set_piece(int y, int x, const Piece& piece);
+    void set_piece(int y, int x, const Piece &piece);
 
     /**
      * @brief Gets the number of pieces for a given player.
@@ -354,12 +348,12 @@ public:
      * @param x Column coordinate (0-7).
      * @return Reference to the Piece at the given location.
      */
-    Piece& get_modifiable_piece(int y, int x) { return board[y][x]; }
+    Piece &get_modifiable_piece(int y, int x) { return board[y][x]; }
 
     /**
      * @brief Get the board info object
-     * 
-     * @return string 
+     *
+     * @return string
      */
     string get_board_info();
 };
@@ -434,7 +428,7 @@ public:
      * @brief Gets the Board object associated with this GameState.
      * @return The Board object.
      */
-    Board* get_board() { return &board; };
+    Board *get_board() { return &board; };
 
     void switch_player() { current_player = (current_player == PLAYER1) ? PLAYER2 : PLAYER1; } /**< Switches the current player. */
 
@@ -478,9 +472,8 @@ public:
      * @param ic Flag indicating if the player to move in this state is the computer. Defaults to true.
      * @param it Flag indicating if this node represents a terminal game state. Defaults to false.
      */
-    MCTS_leaf(GameState s, Move mv, MCTS_leaf *p = nullptr, vector<MCTS_leaf *> c = {}, int w = 0, int tg = 0, bool ic = true, bool it = false) : 
-    state(s), move(mv), wins(w), total_games(tg), is_computer(ic), is_terminal(it), parent(p), children(c) {};
-    
+    MCTS_leaf(GameState s, Move mv, MCTS_leaf *p = nullptr, vector<MCTS_leaf *> c = {}, int w = 0, int tg = 0, bool ic = true, bool it = false) : state(s), move(mv), wins(w), total_games(tg), is_computer(ic), is_terminal(it), parent(p), children(c) {};
+
     /** @brief Returns the number of direct children of this node. */
     int num_children() { return children.size(); };
 
@@ -495,7 +488,7 @@ public:
      * @brief writes the current state of the leaf node to a file.
      * @param out The output file stream to write to.
      */
-    void save_leaf(ofstream&);
+    void save_leaf(ofstream &);
 
     string get_move_info() { return move.get_move_info(); } /**< Returns the move information as a string. */
     // string get_state_info() { return state.get_state_info(); } /**< Returns the game state information as a string. */
