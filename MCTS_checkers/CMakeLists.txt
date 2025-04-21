@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.22.1)
 project(MCTS_checkers VERSION 0.1.0 LANGUAGES C CXX)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 
 # --- Libraries ---
 # Define libraries used by both main executable and tests
@@ -36,6 +36,7 @@ if(BUILD_TESTING)
 
     # Add TESTING definition for all targets *when building for tests*
     # Note: This applies TESTING definition in addition to DEBUG if the build type is Debug AND BUILD_TESTING is ON
+    target_compile_definitions(TESTS PUBLIC $<$<CONFIG:Debug>:DEBUG>)
     target_compile_definitions(checkers_exec_test PUBLIC TESTING)
     # Also add to TESTS library itself if it needs the definition
     target_compile_definitions(TESTS PUBLIC TESTING)
