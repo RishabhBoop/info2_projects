@@ -5,13 +5,6 @@
 #include <unordered_set>
 #include <map>
 
-#ifdef DEBUG
-#define DEBUG_PRINT(X) cout << X;
-#define DEBUG_FUNC(X) return X;
-#else
-#define DEBUG_PRINT(X)
-#define DEBUG_FUNC(X)
-#endif
 
 using namespace std;
 

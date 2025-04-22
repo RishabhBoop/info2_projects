@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# programm auxiliaires
+*/mcts_tree.txt
+
 # Build directories
 build/
 bin/

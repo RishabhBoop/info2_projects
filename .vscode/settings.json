@@ -47,7 +47,10 @@
         "optional": "cpp",
         "fstream": "cpp",
         "cstring": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "ctime": "cpp",
+        "unordered_set": "cpp",
+        "ratio": "cpp"
     },
     "cmake.sourceDirectory": "/home/rishabh/info2_projects/MCTS_checkers"
 }
