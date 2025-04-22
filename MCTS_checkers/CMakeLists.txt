@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.22.1)
 project(MCTS_checkers VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
-
+# If Debug, then add cxx flag
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    message(STATUS "Debug build detected")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g -static-libasan")
+endif()
 # --- Libraries ---
 # Define libraries used by both main executable and tests
 add_library(CLASSES classes.cpp classes.hpp)

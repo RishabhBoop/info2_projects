@@ -216,17 +216,17 @@ void train(MCTS_leaf *root_node, int num_iterations)
         DEBUG_PRINT("Expanding and simulating...\n");
         // expand selected node
         MCTS_leaf *expanded_node = expansion(selected_node);
-        DEBUG_PRINT("Expanded!\n");
-        DEBUG_PRINT("\tExpanded Player: ");
-        DEBUG_PRINT(expanded_node->state.get_current_player());
-        DEBUG_PRINT("\n");
-        DEBUG_PRINT("\tExpanded Move: ");
-        DEBUG_FUNC(expanded_node->print_move());
-        DEBUG_PRINT("\n");
         // if expanded_node is null, we have explored all children
         // and do not need to simulate any more
         if (expanded_node != nullptr)
         {
+            DEBUG_PRINT("Expanded!\n");
+            DEBUG_PRINT("\tExpanded Player: ");
+            DEBUG_FUNC(expanded_node->state.get_current_player());
+            DEBUG_PRINT("\n");
+            DEBUG_PRINT("\tExpanded Move: ");
+            DEBUG_FUNC(expanded_node->print_move());
+            DEBUG_PRINT("\n");
             // simulate the game from the expanded node
             int result = simulation(expanded_node);
             DEBUG_PRINT("\tSimulated!\n");
@@ -359,13 +359,26 @@ void destroy_tree(MCTS_leaf *root_node)
     {
         return;
     }
-    for (MCTS_leaf *child : root_node->children)
+
+    // Create a copy of the children pointers
+    vector<MCTS_leaf *> children_to_delete = root_node->children;
+    // Clear the original vector 
+    root_node->children.clear();
+
+    // Recursively delete using the copied pointers
+    for (MCTS_leaf *child : children_to_delete)
     {
-        destroy_tree(child);
+        // Add an extra null check just in case, though ideally unnecessary
+        if (child != nullptr)
+        {
+            destroy_tree(child);
+        }
     }
+
+    // Delete the current node
     delete root_node;
 
-    return;
+    // No return needed for void function
 }
 
 array<array<Piece, 8>, 8> create_board(string choice)

@@ -26,8 +26,12 @@
 
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << X;
+#define LIMIT 4
+#define DEBUG_FUNC(X) X;
 #else
 #define DEBUG_PRINT(X)
+#define LIMIT 3
+#define DEBUG_FUNC(X);
 #endif
 
 /*
@@ -314,7 +318,13 @@ public:
      * @param x Column coordinate (0-7).
      * @return A pointer to the Piece at the given location.
      */
-    Piece* get_Piece(int y, int x) { return &(board[y][x]); };
+    Piece* get_Piece(int y, int x) { 
+        if (y < 0 || y > 7 || x < 0 || x > 7)
+        {
+            return nullptr; // Return null pointer if out of bounds
+        }
+        return &(board[y][x]); 
+    };
 
     Piece clone_Piece(int y, int x) const { return board[y][x]; } /**< @return A copy of the Piece at the given location. */
 
