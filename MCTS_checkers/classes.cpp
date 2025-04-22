@@ -6,7 +6,7 @@
 
 double C = sqrt(2);
 
-Piece::Piece(int p_id, int x, int y, bool king) : player_id(p_id), x(x), y(y),
+Piece::Piece(int p_id, int y, int x, bool king) : player_id(p_id), y(y), x(x),
                                                   is_king(king),
                                                   color(p_id == 1 ? PLAYER1_COLOR : (p_id == 2 ? PLAYER2_COLOR : EMPTY_FIELD_COLOR)),
                                                   selected(NOT_SELECTED_FIELD_COLOR) {}
@@ -23,7 +23,7 @@ bool Piece::is_empty() const
     }
 }
 
-void Piece::select(int ey, int ex)
+void Piece::select(int y, int x)
 {
     int id = get_id();
     // set color based on player id
@@ -41,7 +41,7 @@ void Piece::select(int ey, int ex)
         set_color(BOLDBLACK);
         return;
     }
-    else if (ey != -1 && ex != -1)
+    else if (y != -1 && x != -1)
     {
         set_selected(BGRED);
     }
@@ -84,15 +84,15 @@ void Piece::print_piece_info()
     cout << RESET;
 }
 
-bool Piece::in_bounds(int row, int col) const
+bool Piece::in_bounds(int y, int x) const
 {
-    return row != -1 && row != 8 && col != -1 && col != 8;
+    return y >= 0 && y < 8 && x >= 0 && x < 8;
 }
 
 string Piece::info_to_file()
 {
     string s = "";
-    s += "p[" + to_string(player_id) + ", " + to_string(x) + ", " + to_string(y) + ", " + (is_king ? "1" : "0") +"]";
+    s += "p[" + to_string(player_id) + ", " + to_string(y) + ", " + to_string(x) + ", " + (is_king ? "1" : "0") + "]";
     return s;
 }
 
@@ -116,7 +116,7 @@ Board::Board(array<array<Piece, 8>, 8> arr_p) : board(arr_p)
     }
 }
 
-void Board::set_piece(int y, int x, const Piece& piece)
+void Board::set_piece(int y, int x, const Piece &piece)
 {
     // Check if the existing piece belongs to a player
     if (board[y][x].get_id() == PLAYER1)
@@ -162,28 +162,28 @@ void Board::print_Board()
 }
 
 string Board::get_board_info()
+{
+    string s = "";
+    s += "[";
+    for (int i = 0; i < 8; i++)
     {
-        string s = "";
-        s += "[";
-        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
         {
-            for (int j = 0; j < 8; j++)
-            {
-                s += board[i][j].info_to_file();
-                s += ",";
-            }
+            s += board[i][j].info_to_file();
+            s += ",";
         }
-        s.pop_back();
-        s += "]";
-        return s;
     }
+    s.pop_back();
+    s += "]";
+    return s;
+}
 
 void Move::print_move()
 {
-    printf("From [%d, %d] to [%d, %d]", src_x+1, src_y+1, dest_x+1, dest_y+1);
+    printf("From [%d, %d] to [%d, %d]", src_y + 1, src_x + 1, dest_y + 1, dest_x + 1);
     if (jump)
     {
-        printf(" while eliminating [%d, %d]", enemy_x+1, enemy_y+1);
+        printf(" while eliminating [%d, %d]", enemy_y + 1, enemy_x + 1);
     }
     printf("\n");
     return;
@@ -194,40 +194,60 @@ void GameState::print_all_moves()
     cout << "Possible moves:\n";
     for (int i = 0; i < possible_moves.size(); i++)
     {
-        cout << "\t" << i+1 << ". ";
+        cout << "\t" << i + 1 << ". ";
         possible_moves[i].print_move();
     }
 }
 
 void GameState::list_all_possible_moves(int player)
 {
-    // clear the list of possible moves
+    // clear the list of possible moves for the current player
     // this is needed because we keep on push-backing moves to the list
     possible_moves.clear();
     for (int i = 0; i < 8; i++)
     {
         for (int j = 0; j < 8; j++)
         {
-            if (!board.clone_Piece(i, j).is_empty() && board.clone_Piece(i, j).get_id() == player)
+            Piece* current_piece = board.get_Piece(i, j);
+            if ((!current_piece->is_empty()) && (current_piece->get_id() == player))
             {
-                list_possible_moves(j, i);
+                list_possible_moves(i, j, player);
+            }
+        }
+    }
+    bool has_jump = false;
+    for (Move m : possible_moves)
+    {
+        if (m.get_jump_type())
+        {
+            has_jump = true;
+            break;
+        }
+    }
+    if (has_jump)
+    {
+        for (int i = 0; i < possible_moves.size(); i++)
+        {
+            if (possible_moves[i].get_jump_type() == false)
+            {
+                possible_moves.erase(possible_moves.begin() + i);
+                i--;
             }
         }
     }
 }
 
-void GameState::list_possible_moves(int from_x, int from_y)
+void GameState::list_possible_moves(int from_y, int from_x, int player)
 {
     bool jump = false;
     Piece current_piece = board.clone_Piece(from_y, from_x);
-    int player = current_piece.get_id();
     int enemy = player == PLAYER1 ? PLAYER2 : PLAYER1;
 
-    int directions[4][2] = {}; // "offset" for the directions
+    int directions[4][2] = {}; // "offset" for the directions; {dy,dx}
     int num_directions = 0;
     // move down
     if (player == PLAYER1 || current_piece.get_king())
-    {   
+    {
         // add down-left
         directions[num_directions][0] = 1;
         directions[num_directions][1] = -1;
@@ -237,6 +257,7 @@ void GameState::list_possible_moves(int from_x, int from_y)
         directions[num_directions][1] = 1;
         num_directions++;
     }
+    // move up
     if (player == PLAYER2 || current_piece.get_king())
     {
         // add up-left
@@ -248,7 +269,6 @@ void GameState::list_possible_moves(int from_x, int from_y)
         directions[num_directions][1] = 1;
         num_directions++;
     }
-    // vector<Move> possible_moves;
     for (int i = 0; i < num_directions; i++)
     {
         int dy = directions[i][0];
@@ -263,10 +283,10 @@ void GameState::list_possible_moves(int from_x, int from_y)
             if (new_piece.is_empty())
             {
                 // add the move to the list of possible moves
-                Move mv(from_x, from_y, new_x, new_y, false, -1, -1);
+                Move mv(from_y, from_x, new_y, new_x, false, -1, -1);
                 possible_moves.push_back(mv);
             }
-            else if (new_piece.get_id() == enemy)
+            else if (!new_piece.is_empty() && new_piece.get_id() == enemy)
             {
                 // check if the next position is in bounds
                 int jump_y = new_y + dy;
@@ -278,22 +298,11 @@ void GameState::list_possible_moves(int from_x, int from_y)
                     if (jump_piece.is_empty())
                     {
                         // add the move to the list of possible moves
-                        Move mv(from_x, from_y, jump_x, jump_y, true, new_x, new_y);
+                        Move mv(from_y, from_x, jump_y, jump_x, true, new_y, new_x);
                         possible_moves.push_back(mv);
                         jump = true;
                     }
                 }
-            }
-        }
-    }
-    if (jump)
-    {
-        for (int i = 0; i < possible_moves.size(); i++)
-        {
-            if (possible_moves[i].get_jump_type() == false)
-            {
-                possible_moves.erase(possible_moves.begin() + i);
-                i--;
             }
         }
     }
@@ -304,30 +313,22 @@ void GameState::list_possible_moves(int from_x, int from_y)
 GameState GameState::clone() const
 {
     // create new Board with the default values
-    array<array<Piece, 8>, 8> new_board;
+    array<array<Piece, 8>, 8> new_board_data;
     for (int i = 0; i < 8; i++) // for each row
     {
         for (int j = 0; j < 8; j++) // for each column in that row
         {
             // copy the piece from the original board to the new board
-            new_board[i][j] = board.clone_Piece(i, j);
+            new_board_data[i][j] = board.clone_Piece(i, j);
         }
     }
-    GameState new_game_state(new_board, current_player, possible_moves);
+    Board new_board(new_board_data);
+    GameState new_game_state(new_board, current_player, {});
     return new_game_state;
 }
 
 int GameState::TerminalState()
 {
-    // Generate all possible moves for the current player.
-    list_all_possible_moves(current_player);
-
-    // // Check if the current player has any pieces left OR any possible moves.
-    // if (board.get_num_players(current_player) == 0 || possible_moves.empty())
-    // {
-    //     // Current player has no pieces or no moves, so they lose. The other player wins.
-    //     return (current_player == PLAYER1) ? PLAYER2 : PLAYER1;
-    // }
     int player1_pieces = board.get_num_players(PLAYER1);
     int player2_pieces = board.get_num_players(PLAYER2);
     if (player2_pieces == 0)
@@ -340,13 +341,13 @@ int GameState::TerminalState()
         // Player 2 wins
         return PLAYER2;
     }
-    list_all_possible_moves(PLAYER2);
+    // list_all_possible_moves(PLAYER2);
     if (possible_moves.empty())
     {
         // Player 2 has no moves, so Player 1 wins.
         return PLAYER1;
     }
-    list_all_possible_moves(PLAYER1);
+    // list_all_possible_moves(PLAYER1);
     if (possible_moves.empty())
     {
         // Player 1 has no moves, so Player 2 wins.
@@ -357,17 +358,17 @@ int GameState::TerminalState()
 }
 
 string GameState::get_state_info()
-    {
-        string s = "";
-        s += "[b";
-        s += board.get_board_info();
-        s += ",";
-        s += to_string(current_player);
-        s += "]";
-        return s;
-    }
+{
+    string s = "";
+    s += "[b";
+    s += board.get_board_info();
+    s += ",";
+    s += to_string(current_player);
+    s += "]";
+    return s;
+}
 
-void Move::perform_move(Board* b, Move mv)
+void Move::perform_move(Board *b, Move mv)
 {
     // Get the piece which is being moved
     Piece moving_piece = b->clone_Piece(mv.src_y, mv.src_x);
@@ -386,8 +387,8 @@ void Move::perform_move(Board* b, Move mv)
     }
 
     // Update the moving piece's coordinates
-    moving_piece.set_x(mv.dest_x);
-    moving_piece.set_y(mv.dest_y);
+    moving_piece.set_row(mv.dest_y);
+    moving_piece.set_col(mv.dest_x);
 
     // Check for king promotion
     if (!moving_piece.get_king())
@@ -406,7 +407,7 @@ string Move::get_move_info()
 {
     string s = "";
     s += "[";
-    s += to_string(src_x) + "," + to_string(src_y) + "," + to_string(dest_x) + "," + to_string(dest_y) + "," + to_string(jump) + "," + to_string(enemy_x) + "," + to_string(enemy_y);
+    s += to_string(src_y) + "," + to_string(src_x) + "," + to_string(dest_y) + "," + to_string(dest_x) + "," + to_string(jump) + "," + to_string(enemy_y) + "," + to_string(enemy_x);
     s += "]";
     return s;
 }
@@ -416,15 +417,28 @@ double MCTS_leaf::cal_rating()
     double rating = 0;
     if (total_games != 0 && parent != nullptr)
     {
-        double np = static_cast<double>(parent->total_games);
-        double nk = static_cast<double>(total_games);
-        double vk = wins/total_games;
-        double ucb = vk + (C * sqrt(log(np)/nk));
-        rating = ucb;
+        // Parent's total games (Np) must also be positive for log
+        if (parent->total_games > 0)
+        {
+            double np = static_cast<double>(parent->total_games);
+            double nk = static_cast<double>(total_games);
+            // Use this node's win rate (vk = wins / total_games)
+            double vk = static_cast<double>(wins) / nk;
+            // Exploration constant C (assuming it's defined elsewhere, e.g., as sqrt(2))
+            // If C is not defined, you need to define it. Example: const double C = sqrt(2.0);
+            const double C = sqrt(2.0); // Define C if not already defined globally/in scope
+            double exploration_term = C * sqrt(log(np) / nk);
+            rating = vk + exploration_term;
+        }
+        else
+        {
+            // Parent hasn't been visited? (unlikely)
+            rating = INFINITY;
+        }
     }
     else
     {
-        rating = 0;
+        rating = INFINITY;
     }
     return rating;
 }
@@ -435,18 +449,18 @@ c[m[MOVE],wins,total_games,is_terminal,is_computer] -- for all other nodes
 r for root node (absolute parent of tree)
 [GAMESTATE] = [b[BOARD],curr_player]
 [BOARD] = [64*p[PIECE]]
-[PIECE] = [player_id,x,y,is_king]
-[MOVE] = [srcx,srcy,destx,desty,j,ex,ey]
+[PIECE] = [player_id,y,x,is_king]
+[MOVE] = [srcy,srcx,desty,destx,j,ey,ex]
 inspiration: https://stackoverflow.com/questions/20005784/saving-a-binary-tree-to-a-file
 */
-void MCTS_leaf::save_leaf(ofstream& out)
+void MCTS_leaf::save_leaf(ofstream &out)
 {
     if (parent == nullptr)
     {
         // if this is the root node, save r, gamestate
         out << "r" << "[g" << state.get_state_info() << ",";
     }
-    else 
+    else
     {
         // if this is not the root node, save c, move
         out << "c" << "[m" << move.get_move_info() << ",";
@@ -461,11 +475,10 @@ void MCTS_leaf::save_leaf(ofstream& out)
     out << to_string(is_computer) << "]";
 }
 
-
-MCTS_leaf* load_leaf(string params, MCTS_leaf* parent)
+MCTS_leaf *load_leaf(string params, MCTS_leaf *parent)
 {
     // the input string will be in the format:
-    // char t = 'r' or 'c' 
+    // char t = 'r' or 'c'
     // r/c[g/m[gamestate/move],wins,total_games,is_terminal,is_computer]
     char type = params[0];  // this is to see if the char is a 'r' or 'c'
     char type1 = params[2]; // this is to see if the char is a 'g' or 'm'
@@ -476,47 +489,43 @@ MCTS_leaf* load_leaf(string params, MCTS_leaf* parent)
         /* it will be in the format: "[...],wins,total_games,is_terminal,is_computer]" */
         params.erase(0, 1); // erase the first bracket
         // extract the values from the string
-        int src_x = stoi(params.substr(0, params.find(',')));
-        params.erase(0, params.find(',') + 1);
         int src_y = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
-        int dest_x = stoi(params.substr(0, params.find(',')));
+        int src_x = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
         int dest_y = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
+        int dest_x = stoi(params.substr(0, params.find(',')));
+        params.erase(0, params.find(',') + 1);
         bool jump = stoi(params.substr(0, params.find(','))) == 0 ? false : true;
         params.erase(0, params.find(',') + 1);
-        int enemy_x = stoi(params.substr(0, params.find(',')));
+        int enemy_y = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
-        int enemy_y = stoi(params.substr(0, params.find(']')));
+        int enemy_x = stoi(params.substr(0, params.find(']')));
         params.erase(0, params.find(']') + 2); // erase the last bracket and comma
         // create a new move object
-        Move new_move(src_x, src_y, dest_x, dest_y, jump, enemy_x, enemy_y);
+        Move new_move(src_y, src_x, dest_y, dest_x, jump, enemy_y, enemy_x);
         /* now the format will be "wins,...,is_computer"*/
         // get the wins
-        int tmp_wins = stoi(params.substr(0,params.find(',')));
+        int tmp_wins = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
-        int tmp_total_games = stoi(params.substr(0,params.find(',')));
+        int tmp_total_games = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
-        bool tmp_is_terminal = stoi(params.substr(0,params.find(','))) == 0 ? false : true;   
-        params.erase(0, params.find(',') + 1); // param string should now be empty 
-        bool tmp_is_computer = stoi(params.substr(0,params.find(']'))) == 0 ? false : true;
+        bool tmp_is_terminal = stoi(params.substr(0, params.find(','))) == 0 ? false : true;
+        params.erase(0, params.find(',') + 1); // param string should now be empty
+        bool tmp_is_computer = stoi(params.substr(0, params.find(']'))) == 0 ? false : true;
         params.erase(0, params.find(']') + 1); // erase the last bracket
-        
+
         // clone gamestate from the parent
         GameState tmp_state = parent->state.clone();
         // switch the player
         tmp_state.switch_player();
         // perform the move
-        Board* tmp_board = tmp_state.get_board();
+        Board *tmp_board = tmp_state.get_board();
         new_move.perform_move(tmp_board, new_move);
-        // populate the possible moves of the new game state
-        // state.list_all_possible_moves(state.get_current_player());
 
         // create a new MCTS_leaf object and attach to tree
-        MCTS_leaf* new_leaf = new MCTS_leaf(tmp_state, new_move, parent, {}, tmp_wins, tmp_total_games, tmp_is_computer, tmp_is_terminal);
-        // // add the new leaf to the parent
-        // parent->children.push_back(new_leaf);
+        MCTS_leaf *new_leaf = new MCTS_leaf(tmp_state, new_move, parent, {}, tmp_wins, tmp_total_games, tmp_is_computer, tmp_is_terminal);
         // set the parent of the new leaf
         new_leaf->parent = parent;
 
@@ -526,10 +535,10 @@ MCTS_leaf* load_leaf(string params, MCTS_leaf* parent)
     {
         /* it will be in the format: "b[p[...],p[...]],curr_player],wins,total_games,rating,is_terminal]" */
         // get board (go until 'p')
-        params.erase(0, 3); // erase the first 2 characters (b[)        // extract the board string
+        params.erase(0, 3);  // erase the first 2 characters (b[)        // extract the board string
         int tmp_counter = 1; // holds counter for bracket, so we can find mathcing bracket
-        int i = 0; // index for the string
-        // parse until counter is 0 
+        int i = 0;           // index for the string
+        // parse until counter is 0
         while (tmp_counter != 0)
         {
             if (params[i] == '[')
@@ -546,8 +555,7 @@ MCTS_leaf* load_leaf(string params, MCTS_leaf* parent)
 
         string board_str = params.substr(0, board_end); // board_str will have the format p[...],...,p[...]]
         // parse the board and create a new board object
-        array<array<Piece, 8>, 8> new_board;
-        // cout << "board_str: " << board_str << endl;
+        array<array<Piece, 8>, 8> new_board_data;
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
@@ -558,27 +566,25 @@ MCTS_leaf* load_leaf(string params, MCTS_leaf* parent)
                 // get the player id
                 int player_id = stoi(board_str.substr(0, board_str.find(',')));
                 board_str.erase(0, board_str.find(',') + 1);
-                // get the x coordinate
-                int x = stoi(board_str.substr(0, board_str.find(',')));
-                board_str.erase(0, board_str.find(',') + 1);
                 // get the y coordinate
                 int y = stoi(board_str.substr(0, board_str.find(',')));
                 board_str.erase(0, board_str.find(',') + 1);
-                // get the is_king
-                bool is_king = stoi(board_str.substr(0, board_str.find(','))) == 0 ? false : true;
+                // get the x coordinate
+                int x = stoi(board_str.substr(0, board_str.find(',')));
                 board_str.erase(0, board_str.find(',') + 1);
+                // get the is_king
+                bool is_king = stoi(board_str.substr(0, board_str.find(']'))) == 0 ? false : true;
+                board_str.erase(0, board_str.find(']') + 2);
                 // create a new piece object
-                Piece new_piece(player_id, x, y, is_king);
+                Piece new_piece(player_id, y, x, is_king);
                 // set the piece in the new board
-                new_board[i][j] = new_piece;
-                // erease last bracket
-                // board_str.erase(0, 1);
+                new_board_data[i][j] = new_piece;
             }
         }
         // create a new board object
-        Board new_board_obj(new_board);
+        Board new_board_obj(new_board_data);
 
-        params.erase(0, board_end+1);
+        params.erase(0, board_end + 1);
         /* now the string params reads "curr_player],wins,total_games,rating,is_terminal,is_computer]" */
         int curr_player = stoi(params.substr(0, params.find(']')));
         // create a new game state object
@@ -587,17 +593,17 @@ MCTS_leaf* load_leaf(string params, MCTS_leaf* parent)
         params.erase(0, params.find(']') + 2); // erease the last bracket and comma
 
         /* now the string param reads "wins,...,is_terminal"*/
-        int tmp_wins = stoi(params.substr(0,params.find(',')));
+        int tmp_wins = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
-        int tmp_total_games = stoi(params.substr(0,params.find(',')));
+        int tmp_total_games = stoi(params.substr(0, params.find(',')));
         params.erase(0, params.find(',') + 1);
-        bool tmp_is_terminal = stoi(params.substr(0,params.find(','))) == 0 ? false : true;
+        bool tmp_is_terminal = stoi(params.substr(0, params.find(','))) == 0 ? false : true;
         params.erase(0, params.find(',') + 1); // param string should now be empty
-        bool tmp_is_computer = stoi(params.substr(0,params.find(']'))) == 0 ? false : true;
+        bool tmp_is_computer = stoi(params.substr(0, params.find(']'))) == 0 ? false : true;
         params.erase(0, params.find(']') + 1); // erase the last bracket
 
         // create a new MCTS_leaf object return it
-        MCTS_leaf* new_leaf = new MCTS_leaf(new_game_state, Move(-1, -1, -1, -1, false, -1, -1), parent, {}, tmp_wins, tmp_total_games, tmp_is_computer, tmp_is_terminal);
+        MCTS_leaf *new_leaf = new MCTS_leaf(new_game_state, Move(-1, -1, -1, -1, false, -1, -1), parent, {}, tmp_wins, tmp_total_games, tmp_is_computer, tmp_is_terminal);
         return new_leaf; // caller function should add this leaf to the parent
     }
     else

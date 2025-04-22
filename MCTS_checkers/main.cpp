@@ -1,3 +1,11 @@
+/**
+ * @author Rishabh Venugopal
+ * @version 1.0
+ * @date 2025-04-18
+ *
+ * @copyright Copyright (c) 2025
+ *
+ */
 #include "classes.hpp"
 #include "mcts_algorithm.hpp"
 #include <chrono>
@@ -25,6 +33,7 @@ using namespace std;
 void print_prj_banner();
 int choice1();
 int choice2();
+MCTS_leaf* select_most_visited_child(MCTS_leaf*);
 
 int main()
 {
@@ -43,7 +52,7 @@ int main()
         printf("--------------------\n");
         choice = 0;
         cin >> choice;
-        if (cin.fail() || choice > 3 || choice < 1)
+        if (cin.fail() || choice > 4 || choice < 1)
         {
             cin.clear();                                         // clear the error flag
             cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
@@ -52,14 +61,80 @@ int main()
         }
         break;
     }
+    // --------- choice 1: play a game ---------
     if (choice == 1)
     {
         return choice1();
     }
+    // --------- choice 2: train the AI ---------
     else if (choice == 2)
     {
         return choice2();
     }
+    else if(choice == 4)
+    {
+        // int res = choice2();
+        // load the tree from file and reconstruct tree
+        // DEBUG_PRINT("-------------------- choice 4 --------------------\n");
+        // ifstream input_file("mcts_tree.txt");
+        MCTS_leaf *mcts_tree = nullptr;
+        Board board = create_board("default");
+        GameState game_state = GameState(board, PLAYER1);
+        mcts_tree = new MCTS_leaf(game_state, Move(-1, -1, -1, -1, false, -1, -1), nullptr, {}, 0, 0, true, false);
+        train(mcts_tree, 5);
+        // DEBUG_PRINT("loading tree from file...\n");
+        // string raw_input;
+        // getline(input_file, raw_input);
+        // mcts_tree = load_tree(raw_input);
+        // traverse the tree and print the boards
+        MCTS_leaf* current_node = mcts_tree;
+        int i = 0;
+        while (i<7)
+        {
+            current_node->state.get_board()->print_Board();
+            cout << "Player " << current_node->state.get_current_player() << endl;
+            current_node->print_move();
+            for (MCTS_leaf* child : current_node->children)
+            {
+                DEBUG_PRINT("Child: ");
+                DEBUG_PRINT(child->state.get_current_player());
+                DEBUG_PRINT("\n");
+                DEBUG_PRINT("Child move: ");
+                child->print_move();
+            }
+            MCTS_leaf* newnode = select_most_visited_child(current_node);
+            DEBUG_PRINT("New node selected!\n");
+            DEBUG_PRINT("Newnode Player: ");
+            DEBUG_PRINT(newnode->state.get_current_player());
+            DEBUG_PRINT("\n");
+            DEBUG_PRINT("newnode move: ");
+            newnode->print_move();
+            DEBUG_PRINT("--------------------------------------\n");
+
+            DEBUG_PRINT("\n");
+            if (newnode == nullptr)
+            {
+                // chose a random child 
+                DEBUG_PRINT("No children found, choosing a random child...\n");
+                if (current_node->children.size() == 0)
+                {
+                    DEBUG_PRINT("No children found, exiting...\n");
+                    current_node->state.get_board()->print_Board();
+                    DEBUG_PRINT("nooo\n");
+                    return 1;
+                }
+                current_node = current_node->children.at(0);
+                i++; 
+                continue;
+            } 
+            current_node = newnode;
+            i++;
+        }
+        destroy_tree(mcts_tree);
+        DEBUG_PRINT("Tree destroyed!\n");
+        
+    }
+    // --------- choice 3: exit ---------
     else
     {
         cout << "exiting...\n";
@@ -69,9 +144,38 @@ int main()
     return 0;
 }
 
+MCTS_leaf *select_most_visited_child(MCTS_leaf *root_node)
+{
+    if (root_node == nullptr || root_node->children.empty())
+    {
+        return root_node; // Return node itself if null or no children
+    }
+
+    MCTS_leaf *most_visited_child = nullptr;
+    int max_visits = -1; // Initialize max visits to handle nodes with 0 visits correctly
+
+    for (MCTS_leaf *child : root_node->children)
+    {
+        if (child->total_games > max_visits)
+        {
+            max_visits = child->total_games;
+            most_visited_child = child;
+        }
+    }
+
+    // If no child was selected (e.g., all have 0 visits), return the first child as a default.
+    // This ensures we always return a child if children exist.
+    if (most_visited_child == nullptr && !root_node->children.empty()) {
+         return root_node->children.front();
+    }
+
+    return most_visited_child; // Return the child with the most visits (or first if all tied at 0)
+}
+
+
 void print_prj_banner()
 {
-    cout << BOLDGREEN <<
+    cout << BOLDBLUE <<
         R"(
      ____  ____   ___      _ _____ _  _______   _           __  __  ____ _____ ____  
     |  _ \|  _ \ / _ \    | | ____| |/ /_   _| / |         |  \/  |/ ___|_   _/ ___| 
@@ -173,6 +277,8 @@ int choice1()
     MCTS_leaf* current_node = mcts_tree;
     while (true)
     {
+        // populate the possible moves of the current node
+        current_node->state.list_all_possible_moves(current_node->state.get_current_player());
         // if current node is terminal, end the game
         if (current_node->state.TerminalState() != -1)
         {
@@ -198,9 +304,9 @@ int choice1()
             {
                 current_node->state.get_board()->get_Piece(move.get_src_y(), move.get_src_x())->select(-1,-1);
                 current_node->state.get_board()->get_Piece(move.get_dest_y(), move.get_dest_x())->select(-1,-1);
-                int enemy_x = move.get_enemy_x();
                 int enemy_y = move.get_enemy_y();
-                current_node->state.get_board()->get_Piece(enemy_y, enemy_x)->select(enemy_y,enemy_x);
+                int enemy_x = move.get_enemy_x();
+                current_node->state.get_board()->get_Piece(enemy_y, enemy_x)->select(enemy_y, enemy_x);
             }
             current_node->state.get_board()->print_Board();
             current_node->state.print_all_moves();
@@ -233,25 +339,51 @@ int choice1()
                 return save_and_exit(mcts_tree);
             }
             // perform the move by searching the children of the current node and finding the one that matches the move
-            string selected_move = current_node->state.possible_moves.at(usr_choice - 1).get_move_info();
+            string selected_move_str = current_node->state.possible_moves.at(usr_choice - 1).get_move_info();
+            // select a move that has not been explored yet
+            // load all of the children into a set
+            map<string, MCTS_leaf *> moves_children;
             for (MCTS_leaf *child : current_node->children)
             {
-                // if the child move matches the selected move, set the current node to the child
-                if (child->get_move_info() == selected_move)
+                moves_children.insert({child->get_move_info(), child});
+            }
+            // check if this move has already been explored by the AI
+            bool found = false;
+            for (Move move : current_node->state.possible_moves)
+            {
+                // map.find() returns an iterator to the element if found, or end() if not found
+                auto it = moves_children.find(selected_move_str);
+                if (it != moves_children.end())
                 {
-                    current_node = child;
+                    // if the child move matches, we can select it
+                    found = true;
+                    current_node = it->second;
                     break;
                 }
-                else
-                {
-                    // if the child move does not match,
-                    // it means that the ai has not explored this part of the tree yet.
-                    // so we need to train the ai
-                    train(current_node, 1000);
-                    // select the best child of the new node
-                    current_node = select_best_child(current_node);
-                }
             }
+            if (!found)
+            {
+                Move selected_move = current_node->state.possible_moves.at(usr_choice - 1);
+                // if the AI has not explored this move yet, we need to create a new child node
+                // create a new game state with the selected move
+                GameState new_game_state = current_node->state.clone();
+                Board* tmp_board = new_game_state.get_board();
+                selected_move.perform_move(tmp_board, selected_move);
+                // change the player of the new game state
+                new_game_state.switch_player();
+                // populate the possible moves of the new game state
+                new_game_state.list_all_possible_moves(new_game_state.get_current_player());
+                // create a new child node with the new game state and add to the tree
+                MCTS_leaf* new_child = new MCTS_leaf(new_game_state, selected_move, current_node);
+                current_node->children.push_back(new_child);
+                current_node = new_child;
+
+                // train the AI on this new node
+                train(current_node, 100);
+            }
+            printf("board after your move:\n");
+            current_node->state.get_board()->print_Board();
+            cout << "--------------------------------------\n";
         }
         // if the current player is the AI
         else
@@ -260,17 +392,23 @@ int choice1()
             // AI will play
             // select the best move from the MCTS tree
             MCTS_leaf* newnode = select_best_child(current_node);
+            cout << "AI selected move: ";
+            newnode->print_move();
             // if newnode is current_node
             if (newnode == current_node)
             {
                 // we are not at the terminal state,
                 // which means the AI has not expolred this part of the tree yet.
                 // so we need to expand the tree by training the ai
-                train(newnode, 1000);
+                train(newnode, 100);
                 // select the best child of the new node
                 newnode = select_best_child(newnode);
             }
+
             current_node = newnode;
+            printf("board after AI's move:\n");
+            current_node->state.get_board()->print_Board();
+            cout << "--------------------------------------\n";
         }
     }
     return save_and_exit(mcts_tree);

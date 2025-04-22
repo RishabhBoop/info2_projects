@@ -24,6 +24,12 @@
 #define OS_LINUX 0
 #endif
 
+#ifdef DEBUG
+#define DEBUG_PRINT(X) cout << X;
+#else
+#define DEBUG_PRINT(X)
+#endif
+
 /*
 https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 https://en.wikipedia.org/wiki/ANSI_escape_code#Colors:~:text=bracketed%20paste%20mode.-,Select%20Graphic%20Rendition%20parameters,-%5Bedit%5D
@@ -132,33 +138,33 @@ class Piece;
 class Move
 {
 private:
-    int src_x;   /**< Source column coordinate (0-7). */
     int src_y;   /**< Source row coordinate (0-7). */
-    int dest_x;  /**< Destination column coordinate (0-7). */
+    int src_x;   /**< Source column coordinate (0-7). */
     int dest_y;  /**< Destination row coordinate (0-7). */
+    int dest_x;  /**< Destination column coordinate (0-7). */
     bool jump;   /**< True if the move is a jump, false otherwise. */
-    int enemy_x; /**< Column coordinate of the jumped piece (-1 if not a jump). */
     int enemy_y; /**< Row coordinate of the jumped piece (-1 if not a jump). */
+    int enemy_x; /**< Column coordinate of the jumped piece (-1 if not a jump). */
 
 public:
     /**
      * @brief Constructs a Move object.
-     * @param src_x Source column (0-7). Defaults to -1.
      * @param src_y Source row (0-7). Defaults to -1.
-     * @param dest_x Destination column (0-7). Defaults to -1.
+     * @param src_x Source column (0-7). Defaults to -1.
      * @param dest_y Destination row (0-7). Defaults to -1.
+     * @param dest_x Destination column (0-7). Defaults to -1.
      * @param jump True if it's a jump. Defaults to false.
-     * @param enemy_x Column of the jumped piece (0-7). Defaults to -1.
      * @param enemy_y Row of the jumped piece (0-7). Defaults to -1.
+     * @param enemy_x Column of the jumped piece (0-7). Defaults to -1.
      */
-    Move(int src_x = -1, int src_y = -1, int dest_x = -1, int dest_y = -1, bool jump = false, int enemy_x = -1, int enemy_y = -1) : src_x(src_x), src_y(src_y), dest_x(dest_x), dest_y(dest_y), jump(jump), enemy_x(enemy_x), enemy_y(enemy_y) {}
+    Move(int src_y = -1, int src_x = -1, int dest_y = -1, int dest_x = -1, bool jump = false, int enemy_y = -1, int enemy_x = -1) : src_y(src_y), src_x(src_x), dest_y(dest_y), dest_x(dest_x), jump(jump), enemy_y(enemy_y), enemy_x(enemy_x) {}
 
-    int get_src_x() const { return src_x; }     /**< @return Source column (0-7). */
     int get_src_y() const { return src_y; }     /**< @return Source row (0-7). */
-    int get_dest_x() const { return dest_x; }   /**< @return Destination column (0-7). */
+    int get_src_x() const { return src_x; }     /**< @return Source column (0-7). */
     int get_dest_y() const { return dest_y; }   /**< @return Destination row (0-7). */
-    int get_enemy_x() const { return enemy_x; } /**< @return Column of the jumped piece (-1 if not a jump). */
+    int get_dest_x() const { return dest_x; }   /**< @return Destination column (0-7). */
     int get_enemy_y() const { return enemy_y; } /**< @return Row of the jumped piece (-1 if not a jump). */
+    int get_enemy_x() const { return enemy_x; } /**< @return Column of the jumped piece (-1 if not a jump). */
 
     /**
      * @brief Prints the details of a single move to the console.
@@ -195,8 +201,8 @@ class Piece
 {
 private:
     int player_id;        /**< ID of the player owning the piece (PLAYER1, PLAYER2, or NOPLAYER). */
-    int x;                /**< Column number (left to right, 0-7). */
     int y;                /**< Row number (top to bottom, 0-7). */
+    int x;                /**< Column number (left to right, 0-7). */
     bool is_king;         /**< True if the piece is a king, false otherwise. */
     const char *color;    /**< ANSI color code for displaying the piece. */
     const char *selected; /**< ANSI background color code when the piece is selected. */
@@ -206,18 +212,18 @@ public:
      * @brief Constructs a Piece object.
      * Initializes player ID, coordinates, king status (default false), and colors based on player ID.
      * @param p_id Player ID (PLAYER1, PLAYER2, or NOPLAYER(==empty field)). Defaults to 0 (NOPLAYER).
-     * @param x Initial column coordinate. Defaults to -1.
      * @param y Initial row coordinate. Defaults to -1.
+     * @param x Initial column coordinate. Defaults to -1.
      * @param king True if the piece is a king. Defaults to false.
      */
-    Piece(int p_id = 0, int x = -1, int y = -1, bool king = false);
+    Piece(int p_id = 0, int y = -1, int x = -1, bool king = false);
 
     /** @brief Gets the player ID of the piece. @return Player ID. */
     inline int get_id() const { return player_id; }
-    /** @brief Gets the column coordinate of the piece. @return Column (0-7). */
-    inline int get_x() const { return x; }
     /** @brief Gets the row coordinate of the piece. @return Row (0-7). */
     inline int get_y() const { return y; }
+    /** @brief Gets the column coordinate of the piece. @return Column (0-7). */
+    inline int get_x() const { return x; }
     /** @brief Checks if the piece is a king. @return True if king, false otherwise. */
     inline bool get_king() const { return is_king; }
     /** @brief Gets the ANSI color code of the piece. @return Color code string. */
@@ -227,10 +233,10 @@ public:
 
     /** @brief Sets the player ID. @param id New player ID. */
     void set_id(int id) { player_id = id; }
-    /** @brief Sets the column coordinate. @param x_in New column. */
-    void set_x(int x_in) { x = x_in; }
     /** @brief Sets the row coordinate. @param y_in New row. */
-    void set_y(int y_in) { y = y_in; }
+    void set_row(int y_in) { y = y_in; }
+    /** @brief Sets the column coordinate. @param x_in New column. */
+    void set_col(int x_in) { x = x_in; }
     /** @brief Sets the king status. @param choice True to make king, false otherwise. */
     void set_king(bool choice) { is_king = choice; }
     /** @brief Sets the display color. @param col New ANSI color code. */
@@ -241,8 +247,10 @@ public:
     /**
      * @brief Sets the piece's appearance to indicate it is selected.
      * Changes the background color based on the player ID and sets the foreground color to bold white.
+     * @param y Row coordinate of the selection context (e.g., enemy piece).
+     * @param x Column coordinate of the selection context (e.g., enemy piece).
      */
-    void select(int,int);
+    void select(int y, int x);
     /**
      * @brief Resets the piece's appearance to its default (deselected) state.
      * Restores the original player color and default background color.
@@ -404,11 +412,12 @@ public:
      * It prioritizes jumps: if any jump moves are found for the piece, only jump moves are stored for that piece.
      * Otherwise, all valid non-jump moves are stored.
      *
-     * @param from_x The starting column coordinate (0-7) of the piece.
      * @param from_y The starting row coordinate (0-7) of the piece.
+     * @param from_x The starting column coordinate (0-7) of the piece.
+     * @param player The ID of the player whose moves are being generated.
      * @note This function modifies the `possible_moves` member variable. If jumps are found, non-jump moves previously added for *other* pieces might still be present unless `list_all_possible_moves` clears the list first.
      */
-    void list_possible_moves(int from_x, int from_y);
+    void list_possible_moves(int from_y, int from_x, int player);
 
     /**
      * @brief Generates and stores all possible moves for all pieces of the current player on the board.
@@ -489,6 +498,8 @@ public:
      * @param out The output file stream to write to.
      */
     void save_leaf(ofstream &);
+
+    void print_move() { move.print_move(); } /**< Prints the move associated with this node. */
 
     string get_move_info() { return move.get_move_info(); } /**< Returns the move information as a string. */
     // string get_state_info() { return state.get_state_info(); } /**< Returns the game state information as a string. */
