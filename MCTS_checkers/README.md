@@ -5,7 +5,7 @@ For the german version of this readme, please refer to the [README_DE.md](README
 2. [Project description](#what-is-this-project)
 ## Building the project
 ### Requirements
-You must have at least `cmake 3.22.1` installed.
+You must have at least `cmake 3.22.1` installed and an Address Sanitizer compatible compiler.
 Because the project is using cmake, you can build it on any platform that supports cmake. 
 As of now, this project has been tested only been tested on Linux-based systems (Ubuntu 24.04 and 24.10). <br>
 The steps below are for building on linux-based systems. If you are not using a linux-based system, you must adapt the steps accordingly.
