@@ -230,12 +230,12 @@ int choice1()
 
     // -------- ask if plyaer wants to play first --------
     cout << "Player 1 always plays first.\n";
-    int player_input;
+    string player_input;
     while (true)
     {
-        cout << "Who do you want to be? (1/2)";
+        cout << "Who do you want to be? [1/2]";
         cin >> player_input;
-        if (cin.fail() || (player_input != 1 && player_input != 2 && player_input != 'q'))
+        if (cin.fail() || (player_input != "1" && player_input != "2" && player_input != "q"))
         {
             cin.clear();                                         // clear the error flag
             cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
@@ -244,11 +244,11 @@ int choice1()
         }
         break;
     }
-    if (player_input == 1)
+    if (player_input == "1")
     {
         printf("You are player 1\n");   
     }
-    else if (player_input == 2)
+    else if (player_input == "2")
     {
         printf("You are player 2\n");
     }
@@ -269,19 +269,11 @@ int choice1()
         if (current_node->state.TerminalState() != -1)
         {
             cout << "Game over!\n";
-            // if (current_node->state.TerminalState() == player_input)
-            // {
-            //     cout << "You lost!\n";
-            // }
-            // else
-            // {
-            //     cout << "You won!\n";
-            // }
             cout << "Player " << current_node->state.TerminalState() << " won!\n";
             return save_and_exit(mcts_tree);
         }
         // if the current player is the user
-        if (current_node->state.get_current_player() == player_input)
+        if (current_node->state.get_current_player() == stoi(player_input))
         {
             cout << "Your turn!\n";
             current_node->state.list_all_possible_moves(current_node->state.get_current_player());
@@ -306,13 +298,16 @@ int choice1()
                 if (enemy_x != -1 || enemy_y != -1) current_node->state.get_board()->get_Piece(enemy_y, enemy_x)->deselect();            
             }
             // get user input
+            string usr_choice_in = "";
             int usr_choice = 0;
             while (true)
             {
                 cout << "Select a move: ";
-                cin >> usr_choice;
-                if ((cin.fail() || usr_choice < 1 || usr_choice > current_node->state.possible_moves.size()) && usr_choice != 'q')
+                cin >> usr_choice_in;
+                usr_choice = stoi(usr_choice_in);
+                if ((cin.fail() || usr_choice < 1 || usr_choice > current_node->state.possible_moves.size()))
                 {
+                    if (usr_choice == 'q') break;
                     cin.clear();                                         // clear the error flag
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
                     cout << "Invalid input, please try again.\n";

@@ -142,6 +142,14 @@ void Board::set_piece(int y, int x, const Piece &piece)
     }
 }
 
+Piece* Board::get_Piece(int y, int x) { 
+    if (y < 0 || y > 7 || x < 0 || x > 7)
+    {
+        return nullptr; // Return null pointer if out of bounds
+    }
+    return &(board[y][x]); 
+};
+
 void Board::print_Board()
 {
     // #ifndef DEBUG
@@ -154,7 +162,9 @@ void Board::print_Board()
         cout << i + 1 << " | ";
         for (int j = 0; j < 8; j++) // for each column in that row
         {
-            cout << board[i][j].get_selected() << board[i][j].get_color() << board[i][j].get_id() << RESET << " | ";
+            int player_id = board[i][j].get_id();
+            string player_to_print = player_id == 0 ? " " : to_string(player_id);
+            cout << board[i][j].get_selected() << board[i][j].get_color() << player_to_print << RESET << " | ";
         }
         cout << endl;
         cout << "  ---------------------------------\n";

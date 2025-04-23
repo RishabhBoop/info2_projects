@@ -318,15 +318,15 @@ public:
      * @param x Column coordinate (0-7).
      * @return A pointer to the Piece at the given location.
      */
-    Piece* get_Piece(int y, int x) { 
-        if (y < 0 || y > 7 || x < 0 || x > 7)
-        {
-            return nullptr; // Return null pointer if out of bounds
-        }
-        return &(board[y][x]); 
-    };
+    Piece* get_Piece(int y, int x);
 
-    Piece clone_Piece(int y, int x) const { return board[y][x]; } /**< @return A copy of the Piece at the given location. */
+    /**
+     * @brief Clones the Piece at the specified coordinates.
+     * @param y 
+     * @param x 
+     * @return Copy of the Piece at the given location.
+     */
+    Piece clone_Piece(int y, int x) const { return board[y][x]; }
 
     /**
      * @brief Prints the current state of the board to the console.
