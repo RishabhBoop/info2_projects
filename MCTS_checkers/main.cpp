@@ -233,7 +233,7 @@ int choice1()
     string player_input;
     while (true)
     {
-        cout << "Who do you want to be? [1/2]";
+        cout << "Who do you want to be? [1/2] or [q] to quit: ";
         cin >> player_input;
         if (cin.fail() || (player_input != "1" && player_input != "2" && player_input != "q"))
         {
@@ -302,12 +302,12 @@ int choice1()
             int usr_choice = 0;
             while (true)
             {
-                cout << "Select a move: ";
+                cout << "Select a move or [q] to quit: ";
                 cin >> usr_choice_in;
+                if (usr_choice_in == "q") break;
                 usr_choice = stoi(usr_choice_in);
                 if ((cin.fail() || usr_choice < 1 || usr_choice > current_node->state.possible_moves.size()))
                 {
-                    if (usr_choice == 'q') break;
                     cin.clear();                                         // clear the error flag
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
                     cout << "Invalid input, please try again.\n";
@@ -316,7 +316,7 @@ int choice1()
                 break;
             }
             // optional quit option
-            if (usr_choice == 'q')
+            if (usr_choice_in == "q")
             {
                 cout << "Exiting...\n";
                 return save_and_exit(mcts_tree);
