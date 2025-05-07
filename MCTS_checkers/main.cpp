@@ -444,6 +444,8 @@ int choice2()
     auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
     DEBUG_PRINT("-------------------------------------- TRAINING DONE --------------------------------------\n");
     cout << "simulated " << mcts_tree->total_games << " games" << " in " << duration.count() << " ms" << endl;
+    cout << "Wins: " << mcts_tree->wins << endl;
+    cout << "Win/Played Ratio: " << (double)mcts_tree->wins / mcts_tree->total_games * 100 << "%" << endl; 
     // save tree to file and destroy tree
     cout << "saving tree to file...\n";
     return save_and_exit(mcts_tree);

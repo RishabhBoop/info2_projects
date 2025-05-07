@@ -142,12 +142,13 @@ void Board::set_piece(int y, int x, const Piece &piece)
     }
 }
 
-Piece* Board::get_Piece(int y, int x) { 
+Piece *Board::get_Piece(int y, int x)
+{
     if (y < 0 || y > 7 || x < 0 || x > 7)
     {
         return nullptr; // Return null pointer if out of bounds
     }
-    return &(board[y][x]); 
+    return &(board[y][x]);
 };
 
 void Board::print_Board()
@@ -218,7 +219,7 @@ void GameState::list_all_possible_moves(int player)
     {
         for (int j = 0; j < 8; j++)
         {
-            Piece* current_piece = board.get_Piece(i, j);
+            Piece *current_piece = board.get_Piece(i, j);
             if ((!current_piece->is_empty()) && (current_piece->get_id() == player))
             {
                 list_possible_moves(i, j, player);

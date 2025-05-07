@@ -198,7 +198,7 @@ void backpropagation(MCTS_leaf *leaf_node, int result)
 void train(MCTS_leaf *root_node, int num_iterations)
 {
     // run the MCTS algorithm for num_iterations
-    for (int i = 0; i <= num_iterations; i++)
+    for (int i = 0; i < num_iterations; i++)
     {
         // select
         MCTS_leaf *selected_node = selection(root_node);
@@ -237,6 +237,19 @@ void train(MCTS_leaf *root_node, int num_iterations)
             backpropagation(expanded_node, result);
             DEBUG_PRINT("\tBackpropagated!\n");
         }
+        // if the expanded node is null, continue with the selection
+        if (expanded_node == nullptr)
+        {
+            // expanded_node = select_best_child(selected_node);
+            DEBUG_PRINT("Expanded node is null, continuing with selected node...\n");
+            int result = simulation(selected_node);
+            DEBUG_PRINT("\tSimulated!\n");
+            DEBUG_PRINT("\tResult: Player ");
+            DEBUG_PRINT(result);
+            DEBUG_PRINT(" won\n");
+            backpropagation(selected_node, result);
+            DEBUG_PRINT("\tBackpropagated!\n");
+        } 
         // // update the rating of all of the nodes in the tree
         // update_rating(root_node);
         DEBUG_PRINT("----- Iteration ");
