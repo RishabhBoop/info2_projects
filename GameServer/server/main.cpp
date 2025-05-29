@@ -1,12 +1,12 @@
-#include "request_helpers.hpp"
+#include "../request_helpers.hpp"
 
 using namespace std;
 
 int main()
 {
     /* init socket
-    * This creates a TCP socket that the server will use to listen for incoming connections.    
-    */
+     * This creates a TCP socket that the server will use to listen for incoming connections.
+     */
     int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for listening for incoming connections
     if (sock < 0)
     {
@@ -16,18 +16,18 @@ int main()
     printf("Socket created successfully\n");
 
     /* specify connection
-    * It is the connection (ports, addresses, etc.) that the server will use to accept incoming connections.
-    */
-    struct sockaddr_in server_service;            
+     * It is the connection (ports, addresses, etc.) that the server will use to accept incoming connections.
+     */
+    struct sockaddr_in server_service;
     server_service.sin_addr.s_addr = INADDR_ANY;  // allow any ipv4 address
     server_service.sin_family = AF_INET;          // IPv4
-    server_service.sin_port = htons(SERVER_PORT); // listen on port SERVER_PORT
+    server_service.sin_port = htons(PORT); // listen on port SERVER_PORT
     printf("Connection specified: %s:%d\n", inet_ntoa(server_service.sin_addr), ntohs(server_service.sin_port));
 
     /* Bind socket to port
-    * This binds the socket to the specified service.
-    * It allows the server to listen for incoming connections on that port.
-    */
+     * This binds the socket to the specified service.
+     * It allows the server to listen for incoming connections on that port.
+     */
     int res = bind(sock, (struct sockaddr *)&server_service, sizeof(server_service));
     if (res < 0)
     {
@@ -35,11 +35,11 @@ int main()
         close(sock);
         return -1;
     }
-    printf("Socket bound to port %d\n", SERVER_PORT);
+    printf("Socket bound to port %d\n", PORT);
 
     /* listen for incoming connections
-    * This tells the socket to listen for incoming connections.
-    */
+     * This tells the socket to listen for incoming connections.
+     */
     res = listen(sock, SOMAXCONN);
     if (res < 0)
     {
@@ -50,8 +50,8 @@ int main()
     printf("Listening for incoming connections...\n");
 
     /* Accept connection
-    * If a client tries to connect, the server will accept the connection and create a new socket for communication with that client.
-    */
+     * If a client tries to connect, the server will accept the connection and create a new socket for communication with that client.
+     */
     int client_sock = accept(sock, nullptr, nullptr);
     if (client_sock < 0)
     {
@@ -62,10 +62,15 @@ int main()
     printf("Accepted connection from client\n");
 
     /* ---------------------------------------------------- */
-    string response = receive_from_client(client_sock); // receive data from the client
+    string response = receive_from(client_sock); // receive data from the client
     cout << "Received from client: " << response << endl;
-
-
+    // echo response back to client (unblock client recv)
+    cout << "Echoing response back to client..." << endl;
+    if (send_to(client_sock, response) < 0)
+    {
+        cerr << "Error sending response back to client: " << strerror(errno) << endl;
+    }
+    cout << "Response sent back to client\n";
     // close socket
     close(sock);
     close(client_sock);

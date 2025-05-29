@@ -1,9 +1,10 @@
-#include "request_helpers.hpp"
+#include "../request_helpers.hpp"
 
 using namespace std;
 
 int main()
 {
+    cout << "Client started" << endl;
     // init socket
     int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for connecting to a server
     if (sock < 0)
@@ -25,6 +26,7 @@ int main()
     clientService.sin_port = htons(PORT);      // port number
     clientService.sin_addr = ip4addr.sin_addr; // bind socket to the target address
     cout << "Socket address set: " << dest_ip << ":" << PORT << endl;
+
     // connect to server
     int iResult = connect(sock, (struct sockaddr *)&clientService, sizeof(clientService));
     if (iResult < 0)
@@ -35,16 +37,15 @@ int main()
     }
     printf("Connected to server\n");
 
-    // send a message to the server
-    string message = "Hello, server!";
-    cout << "Sending message to server: " << message << endl;
-    if (send_to_server(sock, message) < 0)
+    // perform handshake with server
+    cout << "Performing handshake with server..." << endl;
+    if ( handshake(sock) < 0 )
     {
-        cerr << "Failed to send message to server" << endl;
+        cerr << "Handshake failed" << endl;
         close(sock);
         return -1;
     }
-    cout << "Message sent successfully\n";
+    printf("Handshake successful\n");
     // close socket
     close(sock);
     return 0;

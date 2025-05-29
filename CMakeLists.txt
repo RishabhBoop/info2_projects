@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(Info2-projects VERSION 0.1.0 LANGUAGES C CXX)
+
+set(SELECTED_PROJECT "" CACHE STRING "Which sub-project to build: GameServer, MCTS_checkers")
+
+set_property(CACHE SELECTED_PROJECT PROPERTY STRINGS GameServer MCTS_checkers)
+
+# If Debug, then add cxx flag
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    message(STATUS "Debug build detected")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        message(STATUS "Detected Clang or GCC compiler")
+        add_compile_options(-fsanitize=address -g)
+        add_link_options(-fsanitize=address -static-libasan -g)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        message(STATUS "Detected AppleClang compiler")
+        add_compile_options(-fsanitize=address)
+        add_link_options(-fsanitize=address)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        message(STATUS "Detected MSVC compiler")
+        add_compile_options(/fsanitize=address)
+        add_link_options(/fsanitize=address)
+    else()
+        message(SEND_ERROR "AddressSanitizer is not supported on this compiler.")
+    endif()
+endif()
+
+# --- Subdirectories ---
+if (SELECTED_PROJECT STREQUAL "GameServer")   
+    add_subdirectory(GameServer)
+elseif(SELECTED_PROJECT STREQUAL "MCTS_checkers")
+    add_subdirectory(MCTS_checkers)
+else()
+   message(FATAL_ERROR "Unknown project: ${CHOSEN_PROJECT}. Choose one of: GameServer, MCTS_checkers.")
+endif()

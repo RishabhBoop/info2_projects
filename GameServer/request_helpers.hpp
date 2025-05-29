@@ -16,8 +16,12 @@
 
 using namespace std;
 
-int send_to_server(int&, const string);
+int send_to(int, const string);
 
-string receive_from_server(int&);
+string receive_from(int);
+
+string parse_response(const string&);
+
+int handshake(int&);
 
 #endif
