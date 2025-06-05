@@ -10,10 +10,10 @@ int main()
     int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for listening for incoming connections
     if (sock < 0)
     {
-        cerr << "Error creating socket: " << strerror(errno) << endl;
+        cerr << ERROR << "Error creating socket: " << strerror(errno) << RESET << endl;
         return -1;
     }
-    printf("Socket created successfully\n");
+    DEBUG_PRINT("Socket created successfully\n");
 
     /* specify connection
      * It is the connection (ports, addresses, etc.) that the server will use to accept incoming connections.
@@ -22,7 +22,8 @@ int main()
     server_service.sin_addr.s_addr = INADDR_ANY;  // allow any ipv4 address
     server_service.sin_family = AF_INET;          // IPv4
     server_service.sin_port = htons(PORT); // listen on port SERVER_PORT
-    printf("Connection specified: %s:%d\n", inet_ntoa(server_service.sin_addr), ntohs(server_service.sin_port));
+    // printf("Connection specified: %s:%d\n", inet_ntoa(server_service.sin_addr), ntohs(server_service.sin_port));
+    DEBUG_PRINT("Connection specified: " + string(inet_ntoa(server_service.sin_addr)) + ":" + to_string(ntohs(server_service.sin_port)) + "\n");
 
     /* Bind socket to port
      * This binds the socket to the specified service.
@@ -31,11 +32,11 @@ int main()
     int res = bind(sock, (struct sockaddr *)&server_service, sizeof(server_service));
     if (res < 0)
     {
-        cerr << "Error binding socket: " << strerror(errno) << endl;
+        cerr << ERROR << "Error binding socket: " << strerror(errno) << RESET << endl;
         close(sock);
         return -1;
     }
-    printf("Socket bound to port %d\n", PORT);
+    DEBUG_PRINT("Socket bound to port " + to_string(PORT) + "\n");
 
     /* listen for incoming connections
      * This tells the socket to listen for incoming connections.
@@ -43,11 +44,11 @@ int main()
     res = listen(sock, SOMAXCONN);
     if (res < 0)
     {
-        cerr << "Error listening on socket: " << strerror(errno) << endl;
+        cerr << ERROR << "Error listening on socket: " << strerror(errno) << RESET << endl;
         close(sock);
         return -1;
     }
-    printf("Listening for incoming connections...\n");
+    DEBUG_PRINT("Socket is now listening for incoming connections\n");
 
     /* Accept connection
      * If a client tries to connect, the server will accept the connection and create a new socket for communication with that client.
@@ -55,22 +56,37 @@ int main()
     int client_sock = accept(sock, nullptr, nullptr);
     if (client_sock < 0)
     {
-        cerr << "Error accepting connection: " << strerror(errno) << endl;
+        cerr << ERROR << "Error accepting connection: " << strerror(errno) << RESET << endl;
         close(sock);
         return -1;
     }
-    printf("Accepted connection from client\n");
+    DEBUG_PRINT("Accepted connection from client\n");
 
-    /* ---------------------------------------------------- */
+    /* ---------------- Handshake -------------------------- */
     string response = receive_from(client_sock); // receive data from the client
-    cout << "Received from client: " << response << endl;
+    cout << INFO << "Received from client: " << response << RESET << endl;
     // echo response back to client (unblock client recv)
-    cout << "Echoing response back to client..." << endl;
+    cout << INFO << "Echoing response back to client..." << RESET << endl;
     if (send_to(client_sock, response) < 0)
     {
-        cerr << "Error sending response back to client: " << strerror(errno) << endl;
+        cerr << ERROR << "Error sending response back to client: " << strerror(errno) << RESET << endl;
     }
-    cout << "Response sent back to client\n";
+    cout << INFO << "Response sent back to client" << RESET << endl;
+    response = receive_from(client_sock); // receive data from the client again (should be "PERFECT")
+    if (parsed_response(response)["type"].front() == "PERFECT")
+    {
+        // DEBUG_PRINT("Client confirmed handshake successfully\n");
+        cout << SUCCESS << "Client confirmed handshake successfully" << RESET << endl;
+    }
+    else
+    {
+        cerr << ERROR << "Client did not confirm handshake successfully: " << response << RESET << endl;
+    }
+
+    // /* ---------------- send banner  --------------------------*/
+    string banner = "Welcome to the Game Server!\n";
+
+    
     // close socket
     close(sock);
     close(client_sock);
