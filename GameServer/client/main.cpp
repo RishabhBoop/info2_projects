@@ -46,6 +46,56 @@ int main()
         close(sock);
         return -1;
     }
+
+    // receive banner from server
+    string response = receive_from(sock);
+    if (response.empty())
+    {
+        cerr << ERROR << "No response received from server" << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    // send OK response to server
+    if (send_to(sock, "OK") < 0)
+    {
+        cerr << ERROR << "Failed to send OK response to server" << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    map<string, vector<string>> response_structured = parsed_response(response);
+    process_response(response_structured);
+
+    // Receive a question of choosing games from server
+    response = receive_from(sock);
+    if (response.empty())
+    {
+        cerr << ERROR << "No response received from server" << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    response_structured = parsed_response(response);
+    process_response(response_structured, sock);
+    DEBUG_PRINT("Received, processed and sent question\n");
+
+    // receive number of players from server
+    response = receive_from(sock);
+    if (response.empty())
+    {
+        cerr << ERROR << "No response received from server" << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    if (send_to(sock, "OK") < 0)
+    {
+        cerr << ERROR << "Failed to send OK response to server" << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    response_structured.clear(); // clear the previous response
+    response_structured = parsed_response(response);
+    process_response(response_structured);
+    DEBUG_PRINT("Received, processed and sent number of players\n");
+
     // close socket
     close(sock);
     return 0;

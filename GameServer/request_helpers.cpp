@@ -5,6 +5,7 @@ using namespace std;
 int send_to(int sock, const string opcode, const string message)
 {
     string tosend = opcode + ":<" + message + ">" + CONTROL_CHAR;
+    DEBUG_PRINT("Sending message to server: " + tosend + "\n");
     // send message to client
     ssize_t bytes_sent = send(sock, tosend.c_str(), tosend.length(), 0);
     if (bytes_sent < 0)
@@ -65,6 +66,7 @@ string receive_from(int sock)
             break;
         }
     }
+    DEBUG_PRINT("Received data: " + received_data + "\n");
     return received_data;
 }
 
@@ -104,28 +106,28 @@ int handshake(int &sock)
     }
 
     cout << SUCCESS "Handshake successful!" << RESET << endl;
-    
+
     return 0; // success
 }
 
-bool opcode_is_valid(const string &opcode)
+bool opcode_is_valid(const string opcode)
 {
-    return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "OK" || opcode == "MENU" || opcode == "GAME" || opcode == "GOODBYE";
+    return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "OK" || opcode == "QUESTION" || opcode == "ANSWER" || opcode == "GOODBYE";
 }
 
-bool opcode_is_valid(const string &opcode, const string type)
+bool opcode_is_valid(const string opcode, const string type)
 {
-    if (type == "empty headers")
+    if (type == "empty data allowed")
         return opcode == "HEY" || opcode == "PERFECT" || opcode == "OK" || opcode == "GOODBYE";
     else
-        return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "OK" || opcode == "MENU" || opcode == "GAME" || opcode == "GOODBYE";
+        return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "OK" || opcode == "QUESTION" || opcode == "ANSWER" || opcode == "GOODBYE";
 }
 
-map<string, list<string>> parsed_response(string response)
+map<string, vector<string>> parsed_response(string response)
 {
-    list<string> data_list; // list to hold data
-    list<string> type_list; // list to hold type (can be empty or have a value)
-    map<string, list<string>> parsed_map = {{"type", type_list}, {"data", data_list}};
+    vector<string> data_list; // vector to hold data
+    vector<string> type_list; // vector to hold type (can be empty or have a value)
+    map<string, vector<string>> parsed_map = {{"type", type_list}, {"data", data_list}};
 
     // DEBUG_PRINT("Parsing response: " + response + "\n");
     DEBUG_PRINT("Parsing response...\n");
@@ -164,7 +166,7 @@ map<string, list<string>> parsed_response(string response)
     }
     parsed_map["type"].push_back(part); // add the opcode to the type list
     DEBUG_PRINT("Parsed opcode: " + part + "\n");
-    bool opcode_type_empty_header = opcode_is_valid(part, "empty headers");
+    bool opcode_type_empty_header = opcode_is_valid(part, "empty data allowed");
 
     /*
     ********************************
@@ -196,7 +198,7 @@ map<string, list<string>> parsed_response(string response)
     {
         // if the data part is HEY, PERFECT, GOODBYE or OK and the type is empty, it is correct and we can return
         DEBUG_PRINT("Data part is empty, ignoring it for " + part + " response\n");
-        parsed_map["data"].clear(); // clear the data list
+        parsed_map["data"].clear(); // clear the data vector
         return parsed_map;          // return the parsed map as it is
     }
     else if (!data_part.empty() && opcode_is_valid(part))
@@ -212,7 +214,7 @@ map<string, list<string>> parsed_response(string response)
             string item = data_part.substr(start, end - start);
             if (!item.empty())
             {
-                parsed_map["data"].push_back(item); // add the item to the data list
+                parsed_map["data"].push_back(item); // add the item to the data vector
                 DEBUG_PRINT("Parsed data item: " + item + "\n");
             }
             start = end + 1;
@@ -233,3 +235,174 @@ map<string, list<string>> parsed_response(string response)
 
     return parsed_map;
 }
+
+void process_response(const map<string, vector<string>> parsed_response)
+{
+    // Process the parsed response based on the opcode
+    string opcode = parsed_response.at("type").front();
+    vector<string> data = parsed_response.at("data");
+    if (opcode == "TEXT")
+    {
+        // TEXT response contains a message to display
+        DEBUG_PRINT("Processing TEXT response\n");
+        for (auto item : data)
+        {
+            cout << item << endl; // print each item in the data vector
+        }
+    }
+    else if (opcode == "OK")
+    {
+        // OK response indicates that the previous request was successful
+        // Do nothing
+        DEBUG_PRINT("Received OK response\n");
+    }
+    else if (opcode == "QUESTION")
+    {
+        // The question response needs another (overloaded) function to process it
+        DEBUG_PRINT("Received QUESTION response, redirecting to process_response with socket\n");
+        throw invalid_argument("No socket provided for QUESTION response processing");
+    }
+    else if (opcode == "ANSWER")
+    {
+        // The answer response needs another (overloaded) function to process it
+        DEBUG_PRINT("Received ANSWER response, redirecting to process_response with answer\n");
+        throw invalid_argument("No answer int provided for ANSWER response processing");
+    }
+    else if (opcode == "CHECKERS_BOARD_TURN")
+    {
+        // The checkers board turn response needs another (overloaded) function to process it
+        DEBUG_PRINT("Received CHECKERS_BOARD_TURN response, redirecting to process_response with moves\n");
+        throw invalid_argument("No moves list provided for CHECKERS_BOARD_TURN response processing");
+    }
+    else if (opcode == "HEY")
+    {
+        DEBUG_PRINT("Received HEY response, performing handshake\n");
+    }
+    else if (opcode == "PERFECT")
+    {
+        DEBUG_PRINT("Received PERFECT response, handshake successful\n");
+    }
+    else if (opcode == "GOODBYE")
+    {
+        DEBUG_PRINT("Received GOODBYE response, closing connection\n");
+    }
+    else
+    {
+        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
+    }
+}
+
+void process_response(const map<string, vector<string>> parsed_response, int socket)
+{
+    // Process the parsed response based on the opcode
+    string opcode = parsed_response.at("type").front();
+    vector<string> data = parsed_response.at("data");
+    if (opcode == "QUESTION")
+    {
+        // QUESTION response contains a question and options
+        // The first element will be the question, and the rest will be the options
+        // All will be printed
+        DEBUG_PRINT("Received QUESTION response\n");
+        // the first element will be the question
+        cout << BOLDYELLOW << "Question: " << data.front() << RESET << endl;
+        data.erase(data.begin()); // remove the question from the vector
+        // the rest will be the options
+        cout << BOLDYELLOW << "Options: " << endl;
+        for (auto item : data)
+        {
+            cout << "   - " << item << endl; // print each option
+        }
+        cout << RESET;
+
+        // Prompt the user for an answer
+        cout << BOLDYELLOW << "Please enter your answer (index of the option): " << RESET;
+        int answer;
+        cin >> answer; // read the answer from the user
+        // Validate the answer input
+        while (answer < 0 || answer >= data.size())
+        {
+            // if the answer is not valid, prompt the user again
+            cerr << ERROR << "Invalid choice. Please choose a valid option." << RESET << endl;
+            cout << INFO << "Please choose a game (0 for Checkers): ";
+            cin >> answer;
+        }
+        // Send the answer back to the server
+        if (send_to(socket, "ANSWER", to_string(answer)) < 0)
+        {
+            cerr << ERROR << "Failed to send answer to server" << RESET << endl;
+            return;
+        }
+    }
+    else
+    {
+        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
+    }
+}
+
+void process_response(const map<string, vector<string>> parsed_response, int *answer)
+{
+    // Process the parsed response based on the opcode
+    string opcode = parsed_response.at("type").front();
+    vector<string> data = parsed_response.at("data");
+    if (opcode == "ANSWER")
+    {
+        // ANSWER response contains the answer to a question
+        DEBUG_PRINT("Processing ANSWER response\n");
+        if (data.size() != 1)
+        {
+            // if there are multiple answers or no answer, we cannot determine the correct answer
+            cerr << ERROR << "Received multiple answers or no answer from server" << RESET << endl;
+            cerr << "Answers received: ";
+            for (const auto &item : data)
+            {
+                cerr << item << " ";
+            }
+            cerr << endl;
+            return;
+        }
+        else
+        {
+            // if there is only one answer, we can assume it is the correct answer
+            cout << BOLDYELLOW << "Answer: " << data.front() << RESET << endl;
+            *answer = stoi(data.front()); // convert the first element to an integer answer
+        }
+    }
+    else
+    {
+        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
+    }
+}
+
+void process_response(const map<string, vector<string>> parsed_response, vector<int> *moves)
+{
+    // Process the parsed response based on the opcode
+    string opcode = parsed_response.at("type").front();
+    vector<string> data = parsed_response.at("data");
+
+    // FORMAT: CHECKERS_BOARD_TURN:<x_og;y_og;x_new;y_new;>
+    if (opcode == "CHECKERS_BOARD_TURN")
+    {
+        DEBUG_PRINT("Processing CHECKERS_BOARD_TURN response\n");
+        moves->clear();
+        for (const auto item : data)
+        {
+            moves->push_back(stoi(item)); // convert each item to an integer and add to the moves vector
+        }
+    }
+    else
+    {
+        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
+    }
+}
+
+string question_to_string(const string question, const vector<string> options)
+{
+    string question_str = question;
+    for (const auto &option : options)
+    {
+        question_str += ";" + option;
+    }
+    DEBUG_PRINT("Formatted question string: " + question_str + "\n");
+    return question_str;
+}
+

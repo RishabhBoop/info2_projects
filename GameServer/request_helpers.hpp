@@ -1,88 +1,110 @@
 #ifndef REQUEST_HELPERS_HPP
 #define REQUEST_HELPERS_HPP
 
-#include <iostream>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <string>
-#include <cstring> // For strerror
-#include <unistd.h>
-#include <locale> // For locale (needed by wcout)
-
-#include <map>
-#include <list>
-
-/*
-https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
-https://en.wikipedia.org/wiki/ANSI_escape_code#Colors:~:text=bracketed%20paste%20mode.-,Select%20Graphic%20Rendition%20parameters,-%5Bedit%5D
-https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
-*/
-
-#ifndef COLORS
-/** @def RESET
- *  @brief Resets terminal text formatting to default.
- */
-#define RESET "\033[0m"          /* Reset */
-#define BLACK "\033[30m"         /* Black */
-#define RED "\033[31m"           /* Red */
-#define GREEN "\033[32m"         /* Green */
-#define YELLOW "\033[33m"        /* Yellow */
-#define BLUE "\033[34m"          /* Blue */
-#define MAGENTA "\033[35m"       /* Magenta */
-#define CYAN "\033[36m"          /* Cyan */
-#define WHITE "\033[37m"         /* White */
-#define BOLDBLACK "\033[1;30m"   /* Bold Black */
-#define BOLDRED "\033[1;31m"     /* Bold Red */
-#define BOLDGREEN "\033[1;32m"   /* Bold Green */
-#define BOLDYELLOW "\033[1;33m"  /* Bold Yellow */
-#define BOLDBLUE "\033[1;34m"    /* Bold Blue */
-#define BOLDMAGENTA "\033[1;35m" /* Bold Magenta */
-#define BOLDCYAN "\033[1;36m"    /* Bold Cyan */
-#define BOLDWHITE "\033[1;37m"   /* Bold White */
-
-#define BGBLACK "\033[40m"   /* Black */
-#define BGRED "\033[41m"     /* Red */
-#define BGGREEN "\033[42m"   /* Green */
-#define BGYELLOW "\033[43m"  /* Yellow */
-#define BGBLUE "\033[44m"    /* Blue */
-#define BGMAGENTA "\033[45m" /* Magenta */
-#define BGCYAN "\033[46m"    /* Cyan */
-#define BGWHITE "\033[47m"   /* White */
-
-#define SUCCESS BOLDGREEN
-#define ERROR BOLDRED
-#define INFO BOLDBLUE
-#define WARNING BOLDYELLOW
-#define DEBUG BOLDCYAN
-
-#endif
-
-
-#ifdef DEBUG
-#define DEBUG_PRINT(X) cout << DEBUG << X << RESET;
-#define DEBUG_FUNC(X) X;
-#else
-#define DEBUG_PRINT(X)
-#define DEBUG_FUNC(X);
-#endif
-
-
-#define BUFFER_SIZE 1024
-#define PORT 26000
-#define TIMEOUT 10
-#define CONTROL_CHAR 'y' // ASCII Bell character, used as a control character to indicate end of message
+#include "includes.hpp"
 
 using namespace std;
 
-int send_to(int, const string, const string); 
+/**
+ * @brief Sends a message with an opcode and data to a socket.
+ * @param sockfd The socket file descriptor.
+ * @param opcode The opcode string.
+ * @param data The data string to send.
+ * @return 0 on success, -1 on failure.
+ */
+int send_to(int, const string, const string);
 
-int send_to(int, const string); 
+/**
+ * @brief Sends a message to a socket.
+ * @param sockfd The socket file descriptor.
+ * @param message The message string to send.
+ * @return 0 on success, -1 on failure.
+ */
+int send_to(int, const string);
 
+/**
+ * @brief Receives a message from a socket.
+ * @param sockfd The socket file descriptor.
+ * @return The received message as a string.
+ */
 string receive_from(int);
 
-int handshake(int&);
+/**
+ * @brief Performs a handshake with a client or server.
+ * @param sockfd Reference to the socket file descriptor.
+ * @return 0 on success, -1 on failure.
+ */
+int handshake(int &);
 
-map<string, list<string>> parsed_response(string response);
+/**
+ * @brief Checks if an opcode is valid.
+ * @param opcode The opcode string to check.
+ * @return true if valid, false otherwise.
+ */
+bool opcode_is_valid(const string);
+
+/**
+ * @brief Checks if an opcode and sub-opcode are valid.
+ * @param opcode The opcode string to check.
+ * @param subopcode The sub-opcode string to check.
+ * @return true if valid, false otherwise.
+ */
+bool opcode_is_valid(const string, const string);
+
+/**
+ * @brief Parses a response string into a map of opcode and associated data.
+ * @param response The response string to parse.
+ * @return A map from opcode to a vector of strings containing the data.
+ */
+map<string, vector<string>> parsed_response(string);
+
+/**
+ * @brief Processes a parsed response.
+ *        Use this overload when expecting a text response (it will print it).
+ * @param response The parsed response map.
+ */
+void process_response(const map<string, vector<string>>);
+
+/**
+ * @brief Processes a parsed QUESTION response and interacts with the user to collect an answer.
+ *        Use this overload when you are expecting a question.
+ * @param response The parsed response map.
+ * @param value The socket file descriptor to send the answer.
+ */
+void process_response(const map<string, vector<string>>, int);
+
+/**
+ * @brief Processes a parsed ANSWER response and stores the answer in the provided integer pointer.
+ *        Use this overload when you want to extract the answer value from the response.
+ * @param response The parsed response map.
+ * @param value Pointer to an integer where the answer will be stored.
+ */
+void process_response(const map<string, vector<string>>, int *);
+
+/**
+ * @brief Processes a parsed CHECKERS_BOARD_TURN response and fills the provided vector with move data.
+ *        Use this overload when you want to extract a list of moves from the response.
+ * @param response The parsed response map.
+ * @param values Pointer to a vector of integers to be filled with move data.
+ */
+void process_response(const map<string, vector<string>>, vector<int> *);
+
+/**
+ * @brief Converts a question and its options to a string.
+ * @param question The question string.
+ * @param options The vector of option strings.
+ * @return The formatted question string.
+ */
+string question_to_string(const string, const vector<string>);
+
+class Game
+{
+public:
+    int player1_socket;
+    int player2_socket;
+    int current_player; // 1 for player1, 2 for player2
+
+    
+};
 
 #endif
