@@ -588,7 +588,7 @@ void process_response(const map<string, vector<string>> parsed_response, int *an
         else
         {
             // if there is only one answer, we can assume it is the correct answer
-            cout << BOLDYELLOW << "Answer: " << data.front() << RESET << endl;
+            DEBUG_PRINT("Answer: " + data.front() + "\n");
             *answer = stoi(data.front()); // convert the first element to an integer answer
         }
     }
@@ -622,7 +622,7 @@ void process_response(const map<string, vector<string>> parsed_response, string 
         else
         {
             // if there is only one answer, we can assume it is the correct answer
-            cout << BOLDYELLOW << "Answer: " << data.front() << RESET << endl;
+            DEBUG_PRINT("Answer: " + data.front() + "\n");
             *answer = data.front(); // convert the first element to an integer answer
         }
     }

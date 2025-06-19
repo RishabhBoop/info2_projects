@@ -9,15 +9,6 @@
 #define CLASSES_HPP
 #include "../includes.hpp"
 
-/** @def OS_LINUX
- *  @brief Macro defined as 1 if compiling on Linux (GCC), 0 otherwise (assuming Windows). Used for OS-specific commands like clearing the screen.
- */
-#ifdef __GNUC__
-#define OS_LINUX 1
-#elif defined(_WIN64)
-#define OS_LINUX 0
-#endif
-
 /*
 https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 https://en.wikipedia.org/wiki/ANSI_escape_code#Colors:~:text=bracketed%20paste%20mode.-,Select%20Graphic%20Rendition%20parameters,-%5Bedit%5D

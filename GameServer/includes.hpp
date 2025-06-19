@@ -62,19 +62,26 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 #define ERROR BOLDRED
 #define INFO BOLDBLUE
 #define WARNING BOLDYELLOW
-#define DEBUG BOLDCYAN
+#define DEBUG_COLOR BOLDCYAN
 
 #endif
 
 
 #ifdef DEBUG
-#define DEBUG_PRINT(X) cout << DEBUG << X << RESET;
+#define DEBUG_PRINT(X) cout << DEBUG_COLOR << X << RESET;
 #define DEBUG_FUNC(X) X;
 #define LIMIT 4
 #else
-#define DEBUG_PRINT(X)
+#define DEBUG_PRINT(X);
 #define DEBUG_FUNC(X);
 #define LIMIT 3
+#endif
+
+
+#ifdef __GNUC__
+#define OS_LINUX 1
+#elif defined(_WIN64)
+#define OS_LINUX 0
 #endif
 
 

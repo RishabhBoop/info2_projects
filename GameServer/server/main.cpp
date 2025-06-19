@@ -190,7 +190,7 @@ void thread_function(Player *player)
     if (parsed_response(response)["type"].front() == "ANSWER")
     {
         // DEBUG_PRINT("Client answered the question successfully\n");
-        cout << SUCCESS << "Client answered the question successfully" << RESET << endl;
+        DEBUG_PRINT("Client answered the question successfully\n");
         // process the answer
         string nickname;
         string *ptr_nickname = &nickname;

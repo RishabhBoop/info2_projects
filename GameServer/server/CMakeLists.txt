@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.22.1)
 project(MCTS_checkers VERSION 0.1.0 LANGUAGES C CXX)
 
 
-# # --- Libraries ---
-# add_library(CLASSES classes.cpp classes.hpp)
-# add_library(MCTS_LOGIC mcts_algorithm.cpp mcts_algorithm.hpp)
-
 # --- Main Executable ---
 # Define a single executable target
 add_executable(server main.cpp)
