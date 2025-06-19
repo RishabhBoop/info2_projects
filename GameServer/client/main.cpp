@@ -28,8 +28,54 @@ int main()
     DEBUG_PRINT("Socket created successfully\n");
 
     // define target address
-    struct sockaddr_in ip4addr;   // destination address
-    string dest_ip = "127.0.0.1"; // localhost
+    struct sockaddr_in ip4addr; // destination address
+    string dest_ip;
+    bool valid = false;
+    while (!valid)
+    {
+        cout << BOLDYELLOW << "Enter the server IP address [default: 127.0.0.1]: " << RESET;
+        cin >> dest_ip; // read the IP address from user input
+        // validate the IP address
+        if (dest_ip.empty())
+        {
+            cout << INFO << "Using default: localhost" << RESET << endl;
+            dest_ip = "127.0.0.1";
+        }
+        else if (dest_ip.length() > 15 || dest_ip.length() < 7)
+        {
+            cerr << ERROR << "Invalid IP address length. Please enter a valid IPv4 address." << RESET << endl;
+            continue;
+        }
+        else if (dest_ip.find_first_not_of("0123456789.") != string::npos)
+        {
+            cerr << ERROR << "Invalid characters in IP address. Please enter a valid IPv4 address." << RESET << endl;
+            continue;
+        }
+
+        // split the IP address into octets
+        int pos = 0;
+        int octet_count = 0;
+        string dest_ip_to_check = dest_ip + '.'; // append a dot to the end to handle the last octet
+        size_t dot_pos = dest_ip_to_check.find('.');
+        while (dot_pos != string::npos && octet_count < 5)
+        {
+            valid = true;
+            string octet = dest_ip_to_check.substr(pos, dot_pos - pos); // get the octet
+            if (octet.empty() || stoi(octet) < 0 || stoi(octet) > 255)
+            {
+                cerr << ERROR << "Invalid octet: " << octet << ". Each octet must be between 0 and 255." << RESET << endl;
+                valid = false; // set valid to false to continue the loop
+                break;         // exit the loop if an invalid octet is found
+            }
+            pos = dot_pos + 1;                // move to the next position after the dot
+            dot_pos = dest_ip_to_check.find('.', pos); // find the next dot
+            octet_count++;
+        }
+        if (!valid)
+            continue;
+        valid = true;
+    }
+
     inet_pton(AF_INET, dest_ip.c_str(), &ip4addr.sin_addr);
     cout << INFO << "Target address set: " << dest_ip << RESET << endl;
 

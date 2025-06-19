@@ -76,7 +76,7 @@ int main()
         FD_ZERO(&read_fds);      // clear the set
         FD_SET(sock, &read_fds); // add the server socket to the set
 
-        tv.tv_sec = 5;  // set timeout to 5 seconds
+        tv.tv_sec = 30;  // set timeout to 30s
         tv.tv_usec = 0; // no microseconds
 
         int activity = select(sock + 1, &read_fds, nullptr, nullptr, &tv);
