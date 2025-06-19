@@ -50,25 +50,24 @@ If yes:
 PERFECT:<>\a
 ```
 If no:
-[...]
-
-
-<!-- **Server is now the one asking questions**
-
-Client will always respond with:
-```
-OK:<>\a
-``` -->
+[TODO]
 
 ### 2. Server sends welcome message
 ```
 TEXT:<PROJECT 2>\a      // Server sends welcome message
 ```
+
+### 3. Server asks for the player's name
+Server sends:
 ```
-OK:<>\a      // Client responds with OK
+QUESTION_STR:<What is your name?>\a
+```
+Client responds with:
+```
+ANSWER:<Your-Name>\a
 ```
 
-### 3. Choose a game
+### 4. Choose a game
 Server sends a question:
 ```
 QUESTION:<What game do you want to play?;checkers>\a
@@ -77,35 +76,58 @@ Client answers with:
 ```
 ANSWER:<Game-Name>\a
 ```
+### 5. Ask if the player wants to play against an AI or a person
+Server sends:
+```
+QUESTION:<Do you want to play against an AI or a person?;Person,AI>\a
+```
+Client responds with:
+```
+ANSWER:<0/1 (Person/AI)>\a
+```
+#### 5.1 If the player chooses to play against a person and there are no people available 
+Server sends:
+```
+WAITING:<Waiting for another player to join>\a
+```
+The TEXT_LOBBY message turns on a flag in the client. The client will then loop an animation until the server sends a message that the game has started. The client will check for:
+```
+WAITING_END:<>\a
+```
 
-### 4. Game starts
+### 6. Game starts
 Server sends:
 ```
 TEXT:<Game started>\a
 ```
-Client responds with:
-```
-OK:<>\a
-```
-#### 4.1 Checkers Game Logic
+
+#### 6.1 Checkers Game Logic
 The server sends the board:
 ```
-CHEKCERS_BOARD:<board-in-string-form>\a
+CHEKCERS_STATE:<state stringified>\a
 ```
-The server sends the current turn:
+The client sends the chosen move:
 ```
-CHECKERS_BOARD:<Your turn>\a
+CHECKERS_MOVES:<Your turn>\a
 ```
-Client responds with:
+or if the user wants to quit:
 ```
-CHECKERS_BOARD_TURN:<XY_SRC-XY_DEST>\a   // <x-y> 
+CHECKERS_MOVES:<q>\a
 ```
-### 4.2 Checkers Game End
+
+#### 6.2 Checkers Game End
 The server sends the game end message:
 ```
-CHECKERS_END:<Game-Name>\a
+CHECKERS_END:<msg>\a
 ```
-Client responds with:
+And a goodbye message:
 ```
-OK:<>\a
+GOODBYE:<>\a
 ```
+
+## 7. End of the game
+Server sends:
+```
+GOODBYE:<>\a
+```
+Client closes the socket.

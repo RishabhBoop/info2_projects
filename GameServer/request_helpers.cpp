@@ -2,6 +2,20 @@
 
 using namespace std;
 
+// Global variables for lobby state
+int LOBBY_MODE = 1;
+std::string LOBBY_TXT = "";
+thread_local std::string recv_buffer = ""; // buffer for recv
+
+// Initialize lobby mode and text
+// int LOBBY_MODE = 0;
+// string LOBBY_TXT = "";
+
+inline void clear_screen()
+{
+    (void)system("clear");
+}
+
 int send_to(int sock, const string opcode, const string message)
 {
     string tosend = opcode + ":<" + message + ">" + CONTROL_CHAR;
@@ -112,15 +126,15 @@ int handshake(int &sock)
 
 bool opcode_is_valid(const string opcode)
 {
-    return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "OK" || opcode == "QUESTION" || opcode == "ANSWER" || opcode == "GOODBYE";
+    return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "WAITING" || opcode == "WAITING_END" || opcode == "OK" || opcode == "QUESTION" || opcode == "QUESTION_STR" || opcode == "ANSWER" || opcode == "CHECKERS_STATE" || opcode == "CHECKERS_MOVES" || opcode == "CHECKERS_END" || opcode == "GOODBYE";
 }
 
 bool opcode_is_valid(const string opcode, const string type)
 {
     if (type == "empty data allowed")
-        return opcode == "HEY" || opcode == "PERFECT" || opcode == "OK" || opcode == "GOODBYE";
+        return opcode == "HEY" || opcode == "PERFECT" || opcode == "WAITING_END" || opcode == "OK" || opcode == "GOODBYE";
     else
-        return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "OK" || opcode == "QUESTION" || opcode == "ANSWER" || opcode == "GOODBYE";
+        return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "WAITING" || opcode == "WAITING_END" || opcode == "OK" || opcode == "QUESTION" || opcode == "QUESTION_STR" || opcode == "ANSWER" || opcode == "CHECKERS_STATE" || opcode == "CHECKERS_MOVES" || opcode == "CHECKERS_END" || opcode == "GOODBYE";
 }
 
 map<string, vector<string>> parsed_response(string response)
@@ -204,7 +218,7 @@ map<string, vector<string>> parsed_response(string response)
     else if (!data_part.empty() && opcode_is_valid(part))
     {
         // if the data part is not empty, we parse it
-        DEBUG_PRINT("Parsing data part: " + data_part + "\n");
+        // DEBUG_PRINT("Parsing data part: " + data_part + "\n");
 
         // split the data part by semicolon (;) to get the individual data items
         size_t start = 0;
@@ -215,7 +229,7 @@ map<string, vector<string>> parsed_response(string response)
             if (!item.empty())
             {
                 parsed_map["data"].push_back(item); // add the item to the data vector
-                DEBUG_PRINT("Parsed data item: " + item + "\n");
+                // DEBUG_PRINT("Parsed data item: " + item + "\n");
             }
             start = end + 1;
             end = data_part.find(';', start);
@@ -225,7 +239,7 @@ map<string, vector<string>> parsed_response(string response)
         if (start < data_part.length())
         {
             parsed_map["data"].push_back(data_part.substr(start));
-            DEBUG_PRINT("Parsed last data item: " + data_part.substr(start) + "\n");
+            // DEBUG_PRINT("Parsed last data item: " + data_part.substr(start) + "\n");
         }
     }
     else
@@ -234,6 +248,118 @@ map<string, vector<string>> parsed_response(string response)
     }
 
     return parsed_map;
+}
+
+GameState decode_state_response(string data)
+{
+    // remove "[" from the beginning of the string and "]" from the end
+    if (data.substr(0, 1) != "[")
+    {
+        throw runtime_error("Invalid response format: expected '[' at the beginning of the string");
+    }
+    if (data.back() != ']')
+    {
+        throw runtime_error("Invalid response format: expected ']' at the end of the string");
+    }
+    data.erase(0, 1);                 // remove "["
+    data.erase(data.length() - 1, 1); // remove the last "]"
+
+    /* it will be in the format: "b[p[...],p[...]],curr_player],wins,total_games,rating,is_terminal]" */
+    // get board (go until 'p')
+    data.erase(0, 2);    // erase the first 2 characters (b[)        // extract the board string
+    int tmp_counter = 1; // holds counter for bracket, so we can find mathcing bracket
+    int i = 0;           // index for the string
+    // parse until counter is 0
+    while (tmp_counter != 0)
+    {
+        if (data[i] == '[')
+        {
+            tmp_counter++;
+        }
+        else if (data[i] == ']')
+        {
+            tmp_counter--;
+        }
+        i++;
+    }
+    int board_end = i; // end of the board (includes the last bracket; "...]]")
+
+    string board_str = data.substr(0, board_end); // board_str will have the format p[...],...,p[...]]
+    // parse the board and create a new board object
+    array<array<Piece, 8>, 8> new_board_data;
+    for (int i = 0; i < 8; i++)
+    {
+        for (int j = 0; j < 8; j++)
+        {
+            // erease the first 2 characters (p[)
+            board_str.erase(0, 2);
+            /* Each piece will now have the format: "...],p[...],...,p[...]]" */
+            // get the player id
+            int player_id = stoi(board_str.substr(0, board_str.find(',')));
+            board_str.erase(0, board_str.find(',') + 1);
+            // get the y coordinate
+            int y = stoi(board_str.substr(0, board_str.find(',')));
+            board_str.erase(0, board_str.find(',') + 1);
+            // get the x coordinate
+            int x = stoi(board_str.substr(0, board_str.find(',')));
+            board_str.erase(0, board_str.find(',') + 1);
+            // get the is_king
+            bool is_king = stoi(board_str.substr(0, board_str.find(']'))) == 0 ? false : true;
+            board_str.erase(0, board_str.find(']') + 2);
+            // create a new piece object
+            Piece new_piece(player_id, y, x, is_king);
+            // set the piece in the new board
+            new_board_data[i][j] = new_piece;
+        }
+    }
+    // create a new board object
+    Board new_board_obj(new_board_data);
+    data.erase(0, board_end + 1);
+
+    /* now the string data reads "curr_player],wins,total_games,rating,is_terminal,is_computer]" */
+    int curr_player = stoi(data.substr(0, data.find(']')));
+    // create a new game state object
+    GameState new_game_state(new_board_obj, curr_player);
+    new_game_state.list_all_possible_moves(curr_player); // list all possible moves for the current player
+
+    data.erase(0, data.find(']') + 2); // erease the last bracket and comma
+
+    return new_game_state; // return the new game state object
+}
+
+Move decode_move_response(string data)
+{
+    // remove "m[" from the beginning of the string and "]" from the end
+    if (data.substr(0, 1) != "[")
+    {
+        throw runtime_error("Invalid response format: expected '[' at the beginning of the string");
+    }
+    if (data.back() != ']')
+    {
+        throw runtime_error("Invalid response format: expected ']' at the end of the string");
+    }
+    data.erase(0, 1);                 // remove "["
+    data.erase(data.length() - 1, 1); // remove the last "]"
+
+    // now we have a string in the format: "src_y,src_x,dest_y,dest_x,jump,enemy_y,enemy_x"
+    vector<string> move_data;
+    size_t pos = 0;
+    while ((pos = data.find(',')) != string::npos)
+    {
+        move_data.push_back(data.substr(0, pos));
+        data.erase(0, pos + 1);
+    }
+    move_data.push_back(data); // add the last part
+
+    if (move_data.size() != 7)
+    {
+        throw runtime_error("Invalid response format: expected 7 values for move");
+    }
+
+    // create a new move object
+    Move new_move(stoi(move_data[0]), stoi(move_data[1]), stoi(move_data[2]), stoi(move_data[3]), stoi(move_data[4]) == 1, stoi(move_data[5]), stoi(move_data[6]));
+
+    return new_move; // return the new move object
 }
 
 void process_response(const map<string, vector<string>> parsed_response)
@@ -268,11 +394,16 @@ void process_response(const map<string, vector<string>> parsed_response)
         DEBUG_PRINT("Received ANSWER response, redirecting to process_response with answer\n");
         throw invalid_argument("No answer int provided for ANSWER response processing");
     }
-    else if (opcode == "CHECKERS_BOARD_TURN")
+    else if (opcode == "QUESTION_STR")
     {
-        // The checkers board turn response needs another (overloaded) function to process it
-        DEBUG_PRINT("Received CHECKERS_BOARD_TURN response, redirecting to process_response with moves\n");
-        throw invalid_argument("No moves list provided for CHECKERS_BOARD_TURN response processing");
+        // The question string response needs another (overloaded) function to process it
+        DEBUG_PRINT("Received QUESTION_STR response, redirecting to process_response with nickname\n");
+        throw invalid_argument("No nickname string provided for QUESTION_STR response processing");
+    }
+    else if (opcode == "WAITING_END")
+    {
+        DEBUG_PRINT("Received WAITING_END response, setting LOBBY_MODE to 0\n");
+        LOBBY_MODE = 0; // set the lobby mode to 0
     }
     else if (opcode == "HEY")
     {
@@ -308,9 +439,11 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
         data.erase(data.begin()); // remove the question from the vector
         // the rest will be the options
         cout << BOLDYELLOW << "Options: " << endl;
+        int index = 0; // index for options
         for (auto item : data)
         {
-            cout << "   - " << item << endl; // print each option
+            cout << "   " << index << ". " << item << endl; // print each option
+            index++;
         }
         cout << RESET;
 
@@ -332,6 +465,139 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
             cerr << ERROR << "Failed to send answer to server" << RESET << endl;
             return;
         }
+    }
+    else if (opcode == "QUESTION_STR")
+    {
+        // QUESTION_STR response contains a question as a string
+        // This is used for the nickname question
+        DEBUG_PRINT("Received QUESTION_STR response\n");
+        cout << BOLDYELLOW << "Question: " << data.front() << RESET << endl;
+
+        // Prompt the user for an answer
+        string answer;
+        while (true)
+        {
+            cout << BOLDYELLOW << "Please enter your nickname: " << RESET;
+            cin >> answer; // read the answer from the user
+            if (cin.fail())
+            {
+                cin.clear();                                         // clear the error flag
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
+                cout << ERROR << "Invalid input, please try again.\n";
+                continue;
+            }
+            break;
+        }
+
+        // Send the answer back to the server
+        if (send_to(socket, "ANSWER", answer) < 0)
+        {
+            cerr << ERROR << "Failed to send answer to server" << RESET << endl;
+            return;
+        }
+    }
+    else if (opcode == "WAITING_END")
+    {
+        LOBBY_MODE = 0;
+    }
+    else
+    {
+        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
+    }
+}
+
+void process_response(const map<string, vector<string>> parsed_response, int socket, int *flag_to_set)
+{
+    // Process the parsed response based on the opcode
+    string opcode = parsed_response.at("type").front();
+    vector<string> data = parsed_response.at("data");
+    if (opcode == "CHECKERS_STATE")
+    {
+        // The checkers board turn response needs another (overloaded) function to process it
+        DEBUG_PRINT("Received CHECKERS_STATE response, decoding and printing...\n");
+        GameState curr_state = decode_state_response(data.front());
+        curr_state.get_board()->print_Board(); // print the board
+        // print if player 1 or player 2 is the current player
+        if (curr_state.get_current_player() == PLAYER1)
+        {
+            cout << BOLDYELLOW << "Current player: Player 1" << RESET << endl;
+        }
+        else if (curr_state.get_current_player() == PLAYER2)
+        {
+            cout << BOLDYELLOW << "Current player: Player 2" << RESET << endl;
+        }
+        else
+        {
+            cout << ERROR << "Unknown current player!" << RESET << endl;
+        }
+        // print list of possible moves
+        curr_state.print_all_moves();
+        // receive the question
+        string input;
+        while (true)
+        {
+            cout << "Select a move by number or [q] to quit: ";
+            cin >> input; // read the input from the user
+
+            if (input == "q")
+            {
+                // if the input is 'q', send a CHECKERS_END request to the server
+                send_to(socket, "CHECKERS_MOVES", "q"); // send a surrender request
+                cout << BOLDYELLOW << "You surrendered!!\nGoodbye!" << RESET << endl;
+                // close the socket and exit the program TODO: close the socket properly
+                // *flag_to_set = 1; // set the flag to true
+                // exit(0); // exit the program
+                return;
+            }
+            else if (stoi(input) <= curr_state.num_possible_moves() && stoi(input) > 0)
+            {
+                // if the input is a valid move number
+                // select move from the state
+                Move selected_move = curr_state.possible_moves.at(stoi(input) - 1); // get the selected move
+                string move_info = selected_move.get_move_info();                   // get the move info
+
+                // send the move info to the server
+                if (send_to(socket, "CHECKERS_MOVES", move_info) < 0)
+                {
+                    cerr << ERROR << "Failed to send move to server" << RESET << endl;
+                    return;
+                }
+                DEBUG_PRINT("Sent move to server: " + move_info + "\n");
+            }
+            else
+            {
+                cerr << ERROR << "Invalid input, please try again." << RESET << endl;
+                // DEBUG_PRINT("Invalid input received: " + input + "\n");
+                // DEBUG_PRINT("Expected input: a number between 1 and " + to_string(curr_state.num_possible_moves()) + " or 'q' to quit\n");
+                continue;
+            }
+            break;
+        }
+    }
+    else if (opcode == "GOODBYE")
+    {
+        // if the input is 'GOODBYE', set the flag to false
+        DEBUG_PRINT("Received GOODBYE response, setting flag to true\n");
+        *flag_to_set = 1; // set the flag to false
+        cout << BOLDYELLOW << "Goodbye!" << RESET << endl;
+        return; // exit the function
+    }
+    else if (opcode == "CHECKERS_END")
+    {
+        // CHECKERS_END response indicates the end of the game
+        // If it is sent from server, the data contains won/lost info, so just print it
+        // If it is sent from client, the data contains "s" for surrender
+        DEBUG_PRINT("Received CHECKERS_END response, setting flag to true\n");
+        // If the server receives it, it means the client surrendered
+        if (data.front() == "s")
+        {
+            cout << BOLDYELLOW << "client surrendered, game over!" << RESET << endl;
+        }
+        else
+        {
+            cout << BOLDYELLOW << data.front() << RESET << endl;
+        }
+        return; // exit the function
     }
     else
     {
@@ -373,26 +639,150 @@ void process_response(const map<string, vector<string>> parsed_response, int *an
     }
 }
 
-void process_response(const map<string, vector<string>> parsed_response, vector<int> *moves)
+void process_response(const map<string, vector<string>> parsed_response, string *answer)
 {
     // Process the parsed response based on the opcode
     string opcode = parsed_response.at("type").front();
     vector<string> data = parsed_response.at("data");
-
-    // FORMAT: CHECKERS_BOARD_TURN:<x_og;y_og;x_new;y_new;>
-    if (opcode == "CHECKERS_BOARD_TURN")
+    if (opcode == "ANSWER")
     {
-        DEBUG_PRINT("Processing CHECKERS_BOARD_TURN response\n");
-        moves->clear();
-        for (const auto item : data)
+        // ANSWER response contains the answer to a question
+        DEBUG_PRINT("Processing ANSWER response\n");
+        if (data.size() != 1)
         {
-            moves->push_back(stoi(item)); // convert each item to an integer and add to the moves vector
+            // if there are multiple answers or no answer, we cannot determine the correct answer
+            cerr << ERROR << "Received multiple answers or no answer from server" << RESET << endl;
+            cerr << "Answers received: ";
+            for (const auto &item : data)
+            {
+                cerr << item << " ";
+            }
+            cerr << endl;
+            return;
+        }
+        else
+        {
+            // if there is only one answer, we can assume it is the correct answer
+            cout << BOLDYELLOW << "Answer: " << data.front() << RESET << endl;
+            *answer = data.front(); // convert the first element to an integer answer
         }
     }
     else
     {
         cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
     }
+}
+
+void process_response(const map<string, vector<string>> parsed_response, bool *flag)
+{
+    // Process the parsed response based on the opcode
+    string opcode = parsed_response.at("type").front();
+    vector<string> data = parsed_response.at("data");
+    if (opcode == "GOODBYE")
+    {
+        DEBUG_PRINT("Received GOODBYE response, setting flag to false\n");
+        *flag = false; // set the flag to false
+    }
+    else
+    {
+        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
+    }
+}
+
+void process_response(const map<string, vector<string>> parsed_response, Session *curr_sess)
+{
+    // Process the parsed response based on the opcode
+    string opcode = parsed_response.at("type").front();
+    vector<string> data = parsed_response.at("data");
+    if (opcode == "CHECKERS_MOVES")
+    {
+        // CHEKERS_MOVES response contains the moves made by the player
+        DEBUG_PRINT("Processing CHECKERS_MOVES response\n");
+        // decode move into move object
+        // if there is only one move, we can assume it is the correct move
+        if (data.front() == "q")
+        {
+            curr_sess->quit_requested = true; // set the quit requested flag to true
+            DEBUG_PRINT("Received quit request from player, setting quit_requested flag to true\n");
+            cout << BOLDYELLOW << "Player requested to quit the game." << RESET << endl;
+            return; // exit the function
+        }
+
+        Move new_move = decode_move_response(data.front()); // create a new move object from the string
+        curr_sess->prev_move = new_move;                    // tell the session about the move
+        DEBUG_PRINT("Received move: " + new_move.get_move_info() + "\n");
+    }
+    else
+    {
+        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
+    }
+}
+
+void get_response(int sock, int *resp)
+{
+    string response = receive_from(sock);
+    if (response.empty())
+    {
+        throw runtime_error("No response received from server");
+    }
+    map<string, vector<string>> response_structured = parsed_response(response);
+    process_response(response_structured, resp);
+}
+
+void get_response(int sock, string *resp)
+{
+    string response = receive_from(sock);
+    if (response.empty())
+    {
+        throw runtime_error("No response received from server");
+    }
+    map<string, vector<string>> response_structured = parsed_response(response);
+    process_response(response_structured, resp);
+}
+
+void get_response(int sock, int *flag, int opt)
+{
+    string response = receive_from(sock);
+    if (response.empty())
+    {
+        throw runtime_error("No response received from server");
+    }
+    map<string, vector<string>> response_structured = parsed_response(response);
+    process_response(response_structured, sock, flag);
+}
+
+void get_response(int sock, int option = 0)
+{
+    string response = receive_from(sock);
+    DEBUG_PRINT("Received response in get_response: " + response + "\n");
+    if (response.empty())
+    {
+        throw runtime_error("No response received from server");
+    }
+    map<string, vector<string>> response_structured = parsed_response(response);
+    if (option == 0)
+    {
+        process_response(response_structured);
+    }
+    else if (option == 1)
+    {
+        process_response(response_structured, sock);
+    }
+    else
+    {
+        throw invalid_argument("Invalid option for get_response: " + option);
+    }
+}
+
+void get_response(int sock, Session *curr_sess)
+{
+    string response = receive_from(sock);
+    if (response.empty())
+    {
+        throw runtime_error("No response received from server");
+    }
+    map<string, vector<string>> response_structured = parsed_response(response);
+    process_response(response_structured, curr_sess);
 }
 
 string question_to_string(const string question, const vector<string> options)
@@ -406,3 +796,26 @@ string question_to_string(const string question, const vector<string> options)
     return question_str;
 }
 
+void waiting_message(const string &message)
+{
+    while (LOBBY_MODE == 1) // wait until the lobby mode is deactivated
+    {
+        cout << "\r";
+        // Display a waiting message in the lobby
+        cout << BOLDYELLOW << message << ".";
+        usleep(500 * 1000);
+        if (LOBBY_MODE == 0) // check if the lobby mode is deactivated
+        {
+            cout << RESET << endl; // reset the color and exit the loop
+            return;
+        }
+        cout << BOLDYELLOW << "."; // add a dot to the message
+        usleep(500 * 1000);
+        if (LOBBY_MODE == 0) // check if the lobby mode is deactivated
+        {
+            cout << RESET << endl; // reset the color and exit the loop
+            return;
+        }
+        cout << BOLDYELLOW << "." << RESET << endl; // add another dot and reset the color
+    }
+}

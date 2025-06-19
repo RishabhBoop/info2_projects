@@ -4,6 +4,7 @@ using namespace std;
 
 int main()
 {
+#pragma region Init
     cout << "Client started" << endl;
     // init socket
     int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for connecting to a server
@@ -37,7 +38,12 @@ int main()
         return -1;
     }
     cout << SUCCESS << "Connected to server at " << dest_ip << ":" << PORT << RESET << endl;
+#pragma endregion
 
+    int goodbye_received = 0;                      // flag to check if goodbye message is received
+    int *ptr_goodbye_received = &goodbye_received; // pointer to the goodbye_received flag
+
+#pragma region Handshake
     // perform handshake with server
     DEBUG_PRINT("Performing handshake with server\n");
     if (handshake(sock) < 0)
@@ -46,55 +52,171 @@ int main()
         close(sock);
         return -1;
     }
+#pragma endregion
 
-    // receive banner from server
-    string response = receive_from(sock);
-    if (response.empty())
+#pragma region Banner
+    try
     {
-        cerr << ERROR << "No response received from server" << RESET << endl;
-        close(sock);
-        return -1;
+        get_response(sock, 0); // 0 means we expect a text response
     }
-    // send OK response to server
-    if (send_to(sock, "OK") < 0)
+    catch (const runtime_error &e)
     {
-        cerr << ERROR << "Failed to send OK response to server" << RESET << endl;
-        close(sock);
-        return -1;
+        cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
     }
-    map<string, vector<string>> response_structured = parsed_response(response);
-    process_response(response_structured);
+    catch (const invalid_argument &e)
+    {
+        cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+    }
+    catch (...)
+    {
+        cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+    }
+    DEBUG_PRINT("Received and processed banner from server\n");
+#pragma endregion
 
+#pragma region Nickname
+    // receive question: nickname from server
+    try
+    {
+        get_response(sock, 1); // 1 means we expect a question response
+    }
+    catch (const runtime_error &e)
+    {
+        cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
+    }
+    catch (const invalid_argument &e)
+    {
+        cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+    }
+    catch (...)
+    {
+        cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+    }
+    DEBUG_PRINT("Received and processed question from server\n");
+#pragma endregion
+
+#pragma region Game Choice
     // Receive a question of choosing games from server
-    response = receive_from(sock);
-    if (response.empty())
+    try
     {
-        cerr << ERROR << "No response received from server" << RESET << endl;
-        close(sock);
-        return -1;
+        get_response(sock, 1); // 1 means we expect a question response
     }
-    response_structured = parsed_response(response);
-    process_response(response_structured, sock);
-    DEBUG_PRINT("Received, processed and sent question\n");
+    catch (const runtime_error &e)
+    {
+        cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
+    }
+    catch (const invalid_argument &e)
+    {
+        cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+    }
+    catch (...)
+    {
+        cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+    }
+    DEBUG_PRINT("Received and processed game choice question from server\n");
+#pragma endregion
 
-    // receive number of players from server
-    response = receive_from(sock);
-    if (response.empty())
+#pragma region Game Mode
+    // receive question of game mode from server
+    try
     {
-        cerr << ERROR << "No response received from server" << RESET << endl;
-        close(sock);
-        return -1;
+        get_response(sock, 1); // 1 means we expect a question response
     }
-    if (send_to(sock, "OK") < 0)
+    catch (const runtime_error &e)
     {
-        cerr << ERROR << "Failed to send OK response to server" << RESET << endl;
-        close(sock);
-        return -1;
+        cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
     }
-    response_structured.clear(); // clear the previous response
-    response_structured = parsed_response(response);
-    process_response(response_structured);
-    DEBUG_PRINT("Received, processed and sent number of players\n");
+    catch (const invalid_argument &e)
+    {
+        cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+    }
+    catch (...)
+    {
+        cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+    }
+    DEBUG_PRINT("Received and processed game mode question from server\n");
+#pragma endregion
+
+#pragma region Waiting for Players
+    thread waiting_thread(waiting_message, "Waiting for other players..."); // 1 means we expect a question/lobby message
+    while (LOBBY_MODE == 1)                                                 // wait for a maximum of 10 seconds
+    {
+        try
+        {
+            get_response(sock, 0);
+        }
+        catch (const runtime_error &e)
+        {
+            // cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
+            continue;
+        }
+        catch (const invalid_argument &e)
+        {
+            // cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+            continue;
+        }
+        catch (...)
+        {
+            // cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+            continue;
+        }
+    }
+
+    DEBUG_PRINT("Received and processed waiting message from server, waiting for waiting_thread to finish\n");
+    waiting_thread.join(); // wait for the waiting thread to finish
+    DEBUG_PRINT("Waiting thread finished\n");
+#pragma endregion
+
+#pragma region Player ID
+    DEBUG_PRINT("Receiving player ID from server\n");
+    // receive player ID from server
+    try
+    {
+        get_response(sock, 0); // 0 means we expect a text response
+    }
+    catch (const runtime_error &e)
+    {
+        cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
+    }
+    catch (const invalid_argument &e)
+    {
+        cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+    }
+    catch (...)
+    {
+        cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+    }
+    DEBUG_PRINT("Received and processed player ID from server\n");
+#pragma endregion
+
+    int tmp = 0;
+#pragma region Game Logic
+    while (goodbye_received == 0)
+    {
+
+        // receive gamestate from server, process it and send back the move
+        try
+        {
+            get_response(sock, ptr_goodbye_received, 0);
+        }
+        catch (const runtime_error &e)
+        {
+            cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
+        }
+        catch (const invalid_argument &e)
+        {
+            cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+        }
+        catch (...)
+        {
+            cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+        }
+
+        if (tmp == 20)
+            break;
+        tmp++;
+    }
+#pragma endregion
 
     // close socket
     close(sock);

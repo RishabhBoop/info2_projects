@@ -9,7 +9,14 @@
 #include <unistd.h>
 #include <locale> // For locale (needed by wcout)
 
+
+#include <array>
+#include <math.h>
+#include <fstream>
+
 #include <thread>
+#include <mutex>
+#include <future>
 
 #include <map>
 #include <vector>
@@ -63,9 +70,11 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << DEBUG << X << RESET;
 #define DEBUG_FUNC(X) X;
+#define LIMIT 4
 #else
 #define DEBUG_PRINT(X)
 #define DEBUG_FUNC(X);
+#define LIMIT 3
 #endif
 
 
@@ -73,4 +82,5 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 #define PORT 26000
 #define TIMEOUT 10
 #define CONTROL_CHAR '*' // ASCII Bell character, used as a control character to indicate end of message
+
 #endif

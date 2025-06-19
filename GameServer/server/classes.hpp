@@ -7,13 +7,7 @@
  */
 #ifndef CLASSES_HPP
 #define CLASSES_HPP
-#include <iostream>
-#include <vector>
-#include <array> // Add include for std::array
-#include <math.h>
-#include <fstream>
-#include <string>
-#include <cstring>
+#include "../includes.hpp"
 
 /** @def OS_LINUX
  *  @brief Macro defined as 1 if compiling on Linux (GCC), 0 otherwise (assuming Windows). Used for OS-specific commands like clearing the screen.
@@ -22,16 +16,6 @@
 #define OS_LINUX 1
 #elif defined(_WIN64)
 #define OS_LINUX 0
-#endif
-
-#ifdef DEBUG
-#define DEBUG_PRINT(X) cout << X;
-#define LIMIT 4
-#define DEBUG_FUNC(X) X;
-#else
-#define DEBUG_PRINT(X)
-#define LIMIT 3
-#define DEBUG_FUNC(X);
 #endif
 
 /*

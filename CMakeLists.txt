@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(Info2-projects VERSION 0.1.0 LANGUAGES C CXX)
 
-set(SELECTED_PROJECT "" CACHE STRING "Which sub-project to build: GameServer, MCTS_checkers")
+set(SELECTED_PROJECT "GameServer" CACHE STRING "Which sub-project to build: GameServer, MCTS_checkers")
 
 set_property(CACHE SELECTED_PROJECT PROPERTY STRINGS GameServer MCTS_checkers)
 
