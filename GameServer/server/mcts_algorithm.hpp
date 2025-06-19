@@ -150,6 +150,15 @@ MCTS_leaf *load_tree_helper(MCTS_leaf*, string&);
  */
 array<array<Piece, 8>, 8> create_board(string);
 
+
+/**
+ * @brief save the current MCTS tree to a file and exit the program.
+ * 
+ * @param mcts_tree 
+ * @return int 
+ */
+int save_and_exit(MCTS_leaf *mcts_tree);
+
 /**
  * @brief Clears the console screen.
  * Uses `clear` on Linux/macOS and `cls` on Windows.

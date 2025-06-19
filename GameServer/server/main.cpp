@@ -14,6 +14,7 @@ mutex all_sessions_mutex;
 
 int main()
 {
+    print_banner();
 #pragma region Initialize Socket
     /* init socket
      * This creates a TCP socket that the server will use to listen for incoming connections.
@@ -153,14 +154,14 @@ void thread_function(Player *player)
     /* ---------------- Handshake -------------------------- */
     DEBUG_PRINT("------------------ Handshake with client -----------------\n");
     string response = receive_from(client_sock); // receive data from the client
-    cout << INFO << "Received from client: " << response << RESET << endl;
+    DEBUG_PRINT("Received from client: " + response + "\n");
     // echo response back to client (unblock client recv)
-    cout << INFO << "Echoing response back to client..." << RESET << endl;
+    DEBUG_PRINT("Echoing response back to client...\n");
     if (send_to(client_sock, response) < 0)
     {
         cerr << ERROR << "Error sending response back to client: " << strerror(errno) << RESET << endl;
     }
-    cout << INFO << "Response sent back to client" << RESET << endl;
+    DEBUG_PRINT("Response sent back to client\n");
     response = receive_from(client_sock); // receive data from the client again (should be "PERFECT")
     if (parsed_response(response)["type"].front() == "PERFECT")
     {
@@ -198,7 +199,7 @@ void thread_function(Player *player)
         player->set_nickname(nickname);
         // print the nickname
         DEBUG_PRINT("Client's nickname: " + nickname + "\n");
-        cout << INFO << "Client's nickname: " << nickname << RESET << endl;
+        // cout << INFO << "Client's nickname: " << nickname << RESET << endl;
     }
     else
     {
@@ -231,7 +232,7 @@ void thread_function(Player *player)
         // add the chosen game to the player object
         player->set_chosen_game(chosen_answer);
         // print the chosen game
-        cout << INFO << "Client chose option: " << chosen_answer << RESET << endl;
+        DEBUG_PRINT("Client chose option: " + to_string(chosen_answer) + "\n");
     }
     else
     {
@@ -264,7 +265,7 @@ void thread_function(Player *player)
         // add the chosen game mode to the player object
         player->set_chosen_game_mode(chosen_game_mode);
         // print the chosen game mode
-        cout << INFO << "Client chose game mode: " << chosen_game_mode << RESET << endl;
+        DEBUG_PRINT("Client chose game mode: " + to_string(chosen_game_mode) + "\n");
     }
     else
     {
@@ -332,54 +333,6 @@ void thread_function(Player *player)
 
 #pragma endregion
 
-    // #pragma region Check Enough Players
-    //     /* ---------------- check if there are enough players to start the game --------------------------*/
-    //     if (player->get_chosen_game_mode() == 0) // 0 means player chose to play against another player
-    //     {
-    //         DEBUG_PRINT("Client chose to play against another player\n");
-    //         size_t num_players;
-    //         while (true)
-    //         {
-    //             {
-    //                 lock_guard<mutex> lock(all_players_mutex);
-    //                 num_players = ALL_PLAYERS.size();
-    //             }
-    //             if (num_players < 2)
-    //             {
-    //                 // if there are not enough players, send a message to the client and wait for another player to join
-    //                 cerr << INFO << "Not enough players to start the game. Waiting for another player to join..." << RESET << endl;
-    //                 // uncomment the following lines in release version to wait for another player to join
-    //                 while (player->get_session()->is_full() == false) // check if the session is full
-    //                 {
-    //                     cout << INFO << "Session is not full, waiting for another player to join..." << RESET << endl;
-    //                     // wait for another player to join
-    //                     sleep(1); // sleep for 1 second to avoid busy waiting
-    //                     continue;
-    //                 }
-    //                 // this_thread::sleep_for(chrono::seconds(4)); // simulate waiting for another player to join, only for testing
-    //                 if (send_to(client_sock, "WAITING_END", "Other player joined") < 0)
-    //                 {
-    //                     cerr << ERROR << "Error sending number of players to client: " << strerror(errno) << RESET << endl;
-    //                     close(client_sock);
-    //                     return;
-    //                 }
-    //             }
-    //             else
-    //             {
-    //                 DEBUG_PRINT("Enough players to start the game\n");
-    //                 cout << SUCCESS << "Enough players to start the game" << RESET << endl;
-    //             }
-    //             break;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         DEBUG_PRINT("Client chose to play against AI\n");
-    //         cout << INFO << "Client chose to play against AI" << RESET << endl;
-    //     }
-    //     /* ---------------- End check if there are enough players to start the game --------------------------*/
-    // #pragma endregion
-
     /* ---------------- Start game thread --------------------------*/ // TODOOOOOOOOOOOOOOOOOOOOO
     DEBUG_PRINT("------------------ Starting game thread -----------------\n");
     // The client chose to play against AI
@@ -394,7 +347,6 @@ void thread_function(Player *player)
             return;
         }
         DEBUG_PRINT("sent WAITING_END\n");
-        DEBUG_PRINT("Starting MCTS checkers game against AI\n");
         cout << INFO << "Starting MCTS checkers game against AI" << RESET << endl;
         thread mcts_thread(gameplay_ai, player); // start the MCTS checkers game against AI in a separate thread
         mcts_thread.join();                      // wait for the MCTS thread to finish
@@ -508,30 +460,6 @@ void thread_function(Player *player)
 }
 #pragma endregion
 
-#pragma region Save and Exit MCTS Tree
-// ------ SAVES AND DESTROYS TRREE -----
-int save_and_exit(MCTS_leaf *mcts_tree)
-{
-    ofstream output_file("mcts_tree.txt");
-    if (output_file.is_open())
-    {
-        save_tree(mcts_tree, output_file);
-        output_file.close();
-    }
-    else
-    {
-        cout << "Unable to open file\n";
-        destroy_tree(mcts_tree);
-        return 1;
-    }
-    DEBUG_PRINT("saved tree to file!\n");
-    // destroy the tree
-    destroy_tree(mcts_tree);
-    DEBUG_PRINT("Tree destroyed!\n");
-    return 0;
-}
-#pragma endregion
-
 #pragma region AI Gameplay
 // ------ USER INTERACTION MODE -----
 int gameplay_ai(Player *player)
@@ -581,7 +509,6 @@ int gameplay_ai(Player *player)
 #pragma endregion
     DEBUG_PRINT("MCTS tree loaded successfully\n");
 
-    DEBUG_PRINT("Telling Player which player he is\n");
 #pragma region Ask which player/send which player they are
     ptr_session->player1->set_id(1); // set player 1 id
     // send to the client which player they are
@@ -594,6 +521,7 @@ int gameplay_ai(Player *player)
         return save_and_exit(mcts_tree);
     }
 #pragma endregion
+    DEBUG_PRINT("Player id sent to client successfully\n");
 
 #pragma region Game Loop
     // Game loop
@@ -617,11 +545,6 @@ int gameplay_ai(Player *player)
         // Player's turn
         if (current_node->state.get_current_player() == player->get_id())
         {
-            // while (tmpres == -1)
-            // {
-            //     tmpres = send_to(player->get_socket(), "TEXT", "Your turn!\nAI played:");
-            // }
-            // DEBUG_PRINT("Sent text to player\n");
             sleep(1);    // sleep for 1 second to give the player time to read the message
             tmpres = -1; // reset tmpres for the next send_to
 

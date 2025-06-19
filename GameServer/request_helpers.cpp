@@ -4,12 +4,6 @@ using namespace std;
 
 // Global variables for lobby state
 int LOBBY_MODE = 1;
-std::string LOBBY_TXT = "";
-thread_local std::string recv_buffer = ""; // buffer for recv
-
-// Initialize lobby mode and text
-// int LOBBY_MODE = 0;
-// string LOBBY_TXT = "";
 
 inline void clear_screen()
 {
@@ -62,7 +56,6 @@ string receive_from(int sock)
                 if (buffer[i] == CONTROL_CHAR) // check for control character
                 {
                     // stop receiving data when control character is found
-                    DEBUG_PRINT("Control character found in received data\n");
                     cc_found = true; // set flag to true
                     break;
                 }
@@ -179,7 +172,6 @@ map<string, vector<string>> parsed_response(string response)
         throw runtime_error("Invalid response format: unknown opcode '" + part + "'");
     }
     parsed_map["type"].push_back(part); // add the opcode to the type list
-    DEBUG_PRINT("Parsed opcode: " + part + "\n");
     bool opcode_type_empty_header = opcode_is_valid(part, "empty data allowed");
 
     /*
@@ -376,46 +368,10 @@ void process_response(const map<string, vector<string>> parsed_response)
             cout << item << endl; // print each item in the data vector
         }
     }
-    else if (opcode == "OK")
-    {
-        // OK response indicates that the previous request was successful
-        // Do nothing
-        DEBUG_PRINT("Received OK response\n");
-    }
-    else if (opcode == "QUESTION")
-    {
-        // The question response needs another (overloaded) function to process it
-        DEBUG_PRINT("Received QUESTION response, redirecting to process_response with socket\n");
-        throw invalid_argument("No socket provided for QUESTION response processing");
-    }
-    else if (opcode == "ANSWER")
-    {
-        // The answer response needs another (overloaded) function to process it
-        DEBUG_PRINT("Received ANSWER response, redirecting to process_response with answer\n");
-        throw invalid_argument("No answer int provided for ANSWER response processing");
-    }
-    else if (opcode == "QUESTION_STR")
-    {
-        // The question string response needs another (overloaded) function to process it
-        DEBUG_PRINT("Received QUESTION_STR response, redirecting to process_response with nickname\n");
-        throw invalid_argument("No nickname string provided for QUESTION_STR response processing");
-    }
     else if (opcode == "WAITING_END")
     {
         DEBUG_PRINT("Received WAITING_END response, setting LOBBY_MODE to 0\n");
         LOBBY_MODE = 0; // set the lobby mode to 0
-    }
-    else if (opcode == "HEY")
-    {
-        DEBUG_PRINT("Received HEY response, performing handshake\n");
-    }
-    else if (opcode == "PERFECT")
-    {
-        DEBUG_PRINT("Received PERFECT response, handshake successful\n");
-    }
-    else if (opcode == "GOODBYE")
-    {
-        DEBUG_PRINT("Received GOODBYE response, closing connection\n");
     }
     else
     {
@@ -456,7 +412,7 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
         {
             // if the answer is not valid, prompt the user again
             cerr << ERROR << "Invalid choice. Please choose a valid option." << RESET << endl;
-            cout << INFO << "Please choose a game (0 for Checkers): ";
+            cout << BOLDYELLOW << "Please choose a game (0 for Checkers): ";
             cin >> answer;
         }
         // Send the answer back to the server
@@ -721,17 +677,6 @@ void process_response(const map<string, vector<string>> parsed_response, Session
     }
 }
 
-void get_response(int sock, int *resp)
-{
-    string response = receive_from(sock);
-    if (response.empty())
-    {
-        throw runtime_error("No response received from server");
-    }
-    map<string, vector<string>> response_structured = parsed_response(response);
-    process_response(response_structured, resp);
-}
-
 void get_response(int sock, string *resp)
 {
     string response = receive_from(sock);
@@ -743,7 +688,7 @@ void get_response(int sock, string *resp)
     process_response(response_structured, resp);
 }
 
-void get_response(int sock, int *flag, int opt)
+void get_response(int sock, int *flag, int opt = 1)
 {
     string response = receive_from(sock);
     if (response.empty())
@@ -751,7 +696,10 @@ void get_response(int sock, int *flag, int opt)
         throw runtime_error("No response received from server");
     }
     map<string, vector<string>> response_structured = parsed_response(response);
-    process_response(response_structured, sock, flag);
+    if (opt == 0)
+        process_response(response_structured, sock, flag);
+    else if (opt == 1)
+        process_response(response_structured, flag);
 }
 
 void get_response(int sock, int option = 0)
@@ -795,7 +743,6 @@ string question_to_string(const string question, const vector<string> options)
     {
         question_str += ";" + option;
     }
-    DEBUG_PRINT("Formatted question string: " + question_str + "\n");
     return question_str;
 }
 
@@ -822,6 +769,21 @@ void waiting_message(const string &message)
         cout << BOLDYELLOW << "." << RESET << endl; // add another dot and reset the color
     }
 }
+
+#pragma region Send Banner
+void print_banner()
+{
+    DEBUG_PRINT("------------------ Printing banner -----------------\n");
+    string banner = R"(
+        ____  ____   ___      _ _____ _  _______   ____  
+        |  _ \|  _ \ / _ \    | | ____| |/ /_   _| |___ \ 
+        | |_) | |_) | | | |_  | |  _| | ' /  | |     __) |
+        |  __/|  _ <| |_| | |_| | |___| . \  | |    / __/ 
+        |_|   |_| \_\\___/ \___/|_____|_|\_\ |_|   |_____|
+    )";
+    cout << BOLDYELLOW << banner << RESET << endl;
+}
+#pragma endregion
 
 bool Session::is_full() const
 {

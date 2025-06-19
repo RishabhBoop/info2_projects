@@ -219,55 +219,26 @@ void train(MCTS_leaf *root_node, int num_iterations)
         {
             selected_node = root_node;
         }
-        DEBUG_PRINT("Selected!\n");
-        DEBUG_PRINT("\tSelected Player: ");
-        DEBUG_PRINT(selected_node->state.get_current_player());
-        DEBUG_PRINT("\n");
-        DEBUG_PRINT("\tSelected Move: ");
-        DEBUG_FUNC(selected_node->print_move());
-        DEBUG_PRINT("\n");
-        DEBUG_PRINT("Expanding and simulating...\n");
         // expand selected node
         MCTS_leaf *expanded_node = expansion(selected_node);
         // if expanded_node is null, we have explored all children
         // and do not need to simulate any more
         if (expanded_node != nullptr)
         {
-            DEBUG_PRINT("Expanded!\n");
-            DEBUG_PRINT("\tExpanded Player: ");
-            DEBUG_FUNC(expanded_node->state.get_current_player());
-            DEBUG_PRINT("\n");
-            DEBUG_PRINT("\tExpanded Move: ");
-            DEBUG_FUNC(expanded_node->print_move());
-            DEBUG_PRINT("\n");
             // simulate the game from the expanded node
             int result = simulation(expanded_node);
-            DEBUG_PRINT("\tSimulated!\n");
-            DEBUG_PRINT("\tResult: Player ");
-            DEBUG_PRINT(result);
-            DEBUG_PRINT(" won\n");
             // backpropagate the result to the root node
             backpropagation(expanded_node, result);
-            DEBUG_PRINT("\tBackpropagated!\n");
         }
         // if the expanded node is null, continue with the selection
         if (expanded_node == nullptr)
         {
             // expanded_node = select_best_child(selected_node);
-            DEBUG_PRINT("Expanded node is null, continuing with selected node...\n");
             int result = simulation(selected_node);
-            DEBUG_PRINT("\tSimulated!\n");
-            DEBUG_PRINT("\tResult: Player ");
-            DEBUG_PRINT(result);
-            DEBUG_PRINT(" won\n");
             backpropagation(selected_node, result);
-            DEBUG_PRINT("\tBackpropagated!\n");
         } 
         // // update the rating of all of the nodes in the tree
         // update_rating(root_node);
-        DEBUG_PRINT("----- Iteration ");
-        DEBUG_PRINT(i);
-        DEBUG_PRINT(" complete -----\n");
     }
     return;
 }
@@ -468,6 +439,30 @@ array<array<Piece, 8>, 8> create_board(string choice)
         return {};
     }
 }
+
+#pragma region Save and Exit MCTS Tree
+// ------ SAVES AND DESTROYS TRREE -----
+int save_and_exit(MCTS_leaf *mcts_tree)
+{
+    ofstream output_file("mcts_tree.txt");
+    if (output_file.is_open())
+    {
+        save_tree(mcts_tree, output_file);
+        output_file.close();
+    }
+    else
+    {
+        cout << "Unable to open file\n";
+        destroy_tree(mcts_tree);
+        return 1;
+    }
+    DEBUG_PRINT("saved tree to file!\n");
+    // destroy the tree
+    destroy_tree(mcts_tree);
+    DEBUG_PRINT("Tree destroyed!\n");
+    return 0;
+}
+#pragma endregion
 
 void clear_screen()
 {

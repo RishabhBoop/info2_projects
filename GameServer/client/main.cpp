@@ -4,18 +4,8 @@ using namespace std;
 
 int main()
 {
-#pragma region Send Banner
-    DEBUG_PRINT("------------------ Printing banner -----------------\n");
-    string banner = R"(
-        ____  ____   ___      _ _____ _  _______   ____  
-        |  _ \|  _ \ / _ \    | | ____| |/ /_   _| |___ \ 
-        | |_) | |_) | | | |_  | |  _| | ' /  | |     __) |
-        |  __/|  _ <| |_| | |_| | |___| . \  | |    / __/ 
-        |_|   |_| \_\\___/ \___/|_____|_|\_\ |_|   |_____|
-    )";
-    cout << BOLDYELLOW << banner << RESET << endl;
-#pragma endregion
 
+    print_banner();
 #pragma region Init
     cout << "Client started" << endl;
     // init socket

@@ -1,5 +1,6 @@
 #ifndef INCLUDES_HPP
 #define INCLUDES_HPP
+
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -16,7 +17,6 @@
 
 #include <thread>
 #include <mutex>
-#include <future>
 
 #include <map>
 #include <vector>
