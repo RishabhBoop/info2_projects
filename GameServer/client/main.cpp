@@ -4,6 +4,18 @@ using namespace std;
 
 int main()
 {
+#pragma region Send Banner
+    DEBUG_PRINT("------------------ Printing banner -----------------\n");
+    string banner = R"(
+        ____  ____   ___      _ _____ _  _______   ____  
+        |  _ \|  _ \ / _ \    | | ____| |/ /_   _| |___ \ 
+        | |_) | |_) | | | |_  | |  _| | ' /  | |     __) |
+        |  __/|  _ <| |_| | |_| | |___| . \  | |    / __/ 
+        |_|   |_| \_\\___/ \___/|_____|_|\_\ |_|   |_____|
+    )";
+    cout << BOLDYELLOW << banner << RESET << endl;
+#pragma endregion
+
 #pragma region Init
     cout << "Client started" << endl;
     // init socket
@@ -52,26 +64,6 @@ int main()
         close(sock);
         return -1;
     }
-#pragma endregion
-
-#pragma region Banner
-    try
-    {
-        get_response(sock, 0); // 0 means we expect a text response
-    }
-    catch (const runtime_error &e)
-    {
-        cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
-    }
-    catch (const invalid_argument &e)
-    {
-        cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
-    }
-    catch (...)
-    {
-        cerr << ERROR << "An unexpected error occurred" << RESET << endl;
-    }
-    DEBUG_PRINT("Received and processed banner from server\n");
 #pragma endregion
 
 #pragma region Nickname
@@ -189,14 +181,13 @@ int main()
     DEBUG_PRINT("Received and processed player ID from server\n");
 #pragma endregion
 
-    int tmp = 0;
 #pragma region Game Logic
     while (goodbye_received == 0)
     {
-
         // receive gamestate from server, process it and send back the move
         try
         {
+            DEBUG_PRINT("Trying to receive game state from server\n");
             get_response(sock, ptr_goodbye_received, 0);
         }
         catch (const runtime_error &e)
@@ -211,10 +202,6 @@ int main()
         {
             cerr << ERROR << "An unexpected error occurred" << RESET << endl;
         }
-
-        if (tmp == 20)
-            break;
-        tmp++;
     }
 #pragma endregion
 

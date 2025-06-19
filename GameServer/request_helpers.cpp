@@ -511,6 +511,9 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
     // Process the parsed response based on the opcode
     string opcode = parsed_response.at("type").front();
     vector<string> data = parsed_response.at("data");
+
+    DEBUG_PRINT("Processing response with opcode: " + opcode + "\n");
+
     if (opcode == "CHECKERS_STATE")
     {
         // The checkers board turn response needs another (overloaded) function to process it
@@ -699,10 +702,10 @@ void process_response(const map<string, vector<string>> parsed_response, Session
         // CHEKERS_MOVES response contains the moves made by the player
         DEBUG_PRINT("Processing CHECKERS_MOVES response\n");
         // decode move into move object
-        // if there is only one move, we can assume it is the correct move
         if (data.front() == "q")
         {
-            curr_sess->quit_requested = true; // set the quit requested flag to true
+            // curr_sess->quit_requested = true; // set the quit requested flag to true
+            curr_sess->quit_requested = curr_sess->current_player->get_id();
             DEBUG_PRINT("Received quit request from player, setting quit_requested flag to true\n");
             cout << BOLDYELLOW << "Player requested to quit the game." << RESET << endl;
             return; // exit the function
@@ -818,4 +821,16 @@ void waiting_message(const string &message)
         }
         cout << BOLDYELLOW << "." << RESET << endl; // add another dot and reset the color
     }
+}
+
+bool Session::is_full() const
+{
+    // if AI mode, only player1 is needed to be set
+    if (player1 != nullptr && player2 == nullptr && player1->get_chosen_game_mode() == 1)
+        return true;
+    // if multiplayer mode, both players need to be set
+    else if (player1 != nullptr && player2 != nullptr)
+        return true;
+    else
+        return false; // otherwise, the session is not full
 }

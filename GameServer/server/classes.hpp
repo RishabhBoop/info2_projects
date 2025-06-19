@@ -358,6 +358,18 @@ public:
      * @return string
      */
     string get_board_info();
+
+    /**
+     * @brief 
+     * 
+     * @param mv 
+     */
+    void perform_move(Move mv)
+    {
+        // Perform the move on the board
+        mv.perform_move(this, mv);
+    }
+    
 };
 
 /**

@@ -167,7 +167,7 @@ protected:
     int socket;
     string nickname;
     int chosen_game;
-    int chosen_game_mode;
+    int chosen_game_mode; // 0 = multiplayer, 1 = AI
     Session *session; // pointer to the session the player is in
     int id;
 
@@ -197,13 +197,13 @@ class Session
 public:
     Player *player1;
     Player *player2;
-    Player *current_player = player1; // pointer to the current player
+    Player *current_player; // pointer to the current player
     Move prev_move;
     GameState curr_state = GameState(Board(), PLAYER1); // current game state, initialized with an empty board and player 1 as the current player
     int first_player = 1;                     // pointer to the first player in the session (by default player1)
-    bool quit_requested = false;                        // flag to indicate if the player requested to quit
-    Session(Player *p1 = nullptr, Player *p2 = nullptr) : player1(p1), player2(p2) {};
+    int quit_requested = false;                        // flag to indicate if the player requested to quit
+    Session(Player *p1 = nullptr, Player *p2 = nullptr) : player1(p1), player2(p2), current_player(p1) {};
 
-    bool is_full() const { return player1 != nullptr && player2 != nullptr; } // check if the session is full
+    bool is_full() const; // check if the session is full
 };
 #endif
