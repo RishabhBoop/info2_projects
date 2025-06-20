@@ -15,6 +15,10 @@ class Session;
 
 inline void clear_screen();
 
+int init_server_sock();
+
+int init_client_sock();
+
 void waiting_message(const string &);
 
 /**
@@ -72,21 +76,6 @@ bool opcode_is_valid(const string, const string);
 map<string, vector<string>> parsed_response(string);
 
 /**
- * @brief Processes a parsed TEXT response.
- *        Use this overload when expecting TEXT or WAITING_END.
- * @param response The parsed response map.
- */
-void process_response(const map<string, vector<string>>);
-
-/**
- * @brief Processes a parsed QUESTION response, interacts with the user to collect an answer and sends the answer back.
- *        Use this overload when you are expecting a question (QUESTION/QUESTION_STR) or WAITING_END.
- * @param response The parsed response map.
- * @param value The socket file descriptor to send the answer.
- */
-void process_response(const map<string, vector<string>>, int);
-
-/**
  * @brief Processes a parsed ANSWER response and stores the answer in the provided integer pointer.
  *        Use this overload when you want to extract the answer value from the response.
  * @param response The parsed response map.
@@ -101,15 +90,6 @@ void process_response(const map<string, vector<string>>, int *);
  * @param value Pointer to a string where the extracted value will be stored.
  */
 void process_response(const map<string, vector<string>>, string *);
-
-/**
- * @brief Processes a parsed response and sets a boolean flag based on the response type.
- *        Use this overload when you want to extract a boolean value from the response data.
- *        This is used for GOODBYE.
- * @param response The parsed response map.
- * @param value Pointer to the boolean where the extracted value will be stored.
- */
-void process_response(const map<string, vector<string>>, bool *);
 
 /**
  * @brief Processes a parsed response and updates the current session state based on the response.
@@ -145,22 +125,12 @@ void get_response(int, string *);
  * 
  * @note This function is e.g. in game logic. 
  * @param sock The socket file descriptor.
- * @param flag Pointer to an integer where the response will be stored.
+ * @param flag Pointer to an integer where the response will be stored. (can be nullptr if not needed)
  * @param opt An integer option to specify the type of response handling (it can be anything)
  */
 void get_response(int, int *, int);
 
-/**
- * @brief Receives a response and processes it.
- *       Use this overload when you want to handle a response that does not contain any actions or contains a question.
- * @example
- *         get_response(sock); // defaults to 0 means we expect a TEXT response
- *         get_response(sock, 1); // 1 means we expect a QUESTION/WAITING_END message
- * @param sock The socket file descriptor.
- * @param option An integer option to specify the type of response handling (0 means we expect a text response, 1 means we expect a question/lobby message).
- */
-void get_response(int, int);
-
+void get_response(int);
 
 /**
  * @brief Receives a response and processes it.

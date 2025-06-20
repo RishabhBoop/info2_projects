@@ -10,6 +10,142 @@ inline void clear_screen()
     (void)system("clear");
 }
 
+int init_server_sock()
+{
+    /* init socket
+     * This creates a TCP socket that the server will use to listen for incoming connections.
+     */
+    int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for listening for incoming connections
+    if (sock < 0)
+    {
+        cerr << ERROR << "Error creating socket: " << strerror(errno) << RESET << endl;
+        return -1;
+    }
+    DEBUG_PRINT("Socket created successfully, now we can listen to incoming connections\n");
+
+    /* specify connection
+     * It is the connection (ports, addresses, etc.) that the server will use to accept incoming connections.
+     */
+    struct sockaddr_in server_service;
+    server_service.sin_addr.s_addr = INADDR_ANY; // allow any ipv4 address
+    server_service.sin_family = AF_INET;         // IPv4
+    server_service.sin_port = htons(PORT);       // listen on port PORT
+    DEBUG_PRINT("Connection specified: " + string(inet_ntoa(server_service.sin_addr)) + ":" + to_string(ntohs(server_service.sin_port)) + "\n");
+
+    /* Bind socket to port
+     * This binds the socket to the specified service.
+     * It allows the server to listen for incoming connections on that port.
+     */
+    int res = bind(sock, (struct sockaddr *)&server_service, sizeof(server_service));
+    if (res < 0)
+    {
+        cerr << ERROR << "Error binding socket: " << strerror(errno) << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    DEBUG_PRINT("--------- Server is ready to accept connections ---------\n");
+
+    /* listen for incoming connections
+     * This tells the socket to listen for incoming connections.
+     */
+    res = listen(sock, SOMAXCONN);
+    if (res < 0)
+    {
+        cerr << ERROR << "Error listening on socket: " << strerror(errno) << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    DEBUG_PRINT("Socket is now listening for incoming connections\n");
+    cout << INFO << "Server is listening on port " << PORT << RESET << endl;
+
+    return sock;
+}
+
+int init_client_sock()
+{
+    cout << "Client started" << endl;
+    // init socket
+    int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for connecting to a server
+    if (sock < 0)
+    {
+        cerr << ERROR << "Error creating socket: " << strerror(errno) << RESET << endl;
+        return -1;
+    }
+    DEBUG_PRINT("Socket created successfully\n");
+
+    // define target address
+    struct sockaddr_in ip4addr; // destination address
+    string dest_ip;
+    bool valid = false;
+    while (!valid)
+    {
+        cout << BOLDYELLOW << "Enter the server IP address [default: 127.0.0.1]: " << RESET;
+        cin >> dest_ip; // read the IP address from user input
+        // validate the IP address
+        if (dest_ip.empty())
+        {
+            cout << INFO << "Using default: localhost" << RESET << endl;
+            dest_ip = "127.0.0.1";
+        }
+        else if (dest_ip.length() > 15 || dest_ip.length() < 7)
+        {
+            cerr << ERROR << "Invalid IP address length. Please enter a valid IPv4 address." << RESET << endl;
+            continue;
+        }
+        else if (dest_ip.find_first_not_of("0123456789.") != string::npos)
+        {
+            cerr << ERROR << "Invalid characters in IP address. Please enter a valid IPv4 address." << RESET << endl;
+            continue;
+        }
+
+        // split the IP address into octets
+        int pos = 0;
+        int octet_count = 0;
+        string dest_ip_to_check = dest_ip + '.'; // append a dot to the end to handle the last octet
+        size_t dot_pos = dest_ip_to_check.find('.');
+        while (dot_pos != string::npos && octet_count < 5)
+        {
+            valid = true;
+            string octet = dest_ip_to_check.substr(pos, dot_pos - pos); // get the octet
+            if (octet.empty() || stoi(octet) < 0 || stoi(octet) > 255)
+            {
+                cerr << ERROR << "Invalid octet: " << octet << ". Each octet must be between 0 and 255." << RESET << endl;
+                valid = false; // set valid to false to continue the loop
+                break;         // exit the loop if an invalid octet is found
+            }
+            pos = dot_pos + 1;                         // move to the next position after the dot
+            dot_pos = dest_ip_to_check.find('.', pos); // find the next dot
+            octet_count++;
+        }
+        if (!valid)
+            continue;
+        valid = true;
+    }
+
+    inet_pton(AF_INET, dest_ip.c_str(), &ip4addr.sin_addr);
+    cout << INFO << "Target address set: " << dest_ip << RESET << endl;
+
+    // set up socket address
+    struct sockaddr_in clientService;          // client address
+    clientService.sin_family = AF_INET;        // IPv4
+    clientService.sin_port = htons(PORT);      // port number
+    clientService.sin_addr = ip4addr.sin_addr; // bind socket to the target address
+    cout << INFO << "Socket address set: " << dest_ip << ":" << PORT << RESET << endl;
+    // DEBUG_PRINT("Socket address set: " + dest_ip + ":" + to_string(PORT) + "\n");
+
+    // connect to server
+    int iResult = connect(sock, (struct sockaddr *)&clientService, sizeof(clientService));
+    if (iResult < 0)
+    {
+        cerr << ERROR << "Error connecting to server: " << strerror(errno) << RESET << endl;
+        close(sock);
+        return -1;
+    }
+    cout << SUCCESS << "Connected to server at " << dest_ip << ":" << PORT << RESET << endl;
+
+    return sock;
+}
+
 int send_to(int sock, const string opcode, const string message)
 {
     string tosend = opcode + ":<" + message + ">" + CONTROL_CHAR;
@@ -354,114 +490,6 @@ Move decode_move_response(string data)
     return new_move; // return the new move object
 }
 
-void process_response(const map<string, vector<string>> parsed_response)
-{
-    // Process the parsed response based on the opcode
-    string opcode = parsed_response.at("type").front();
-    vector<string> data = parsed_response.at("data");
-    if (opcode == "TEXT")
-    {
-        // TEXT response contains a message to display
-        DEBUG_PRINT("Processing TEXT response\n");
-        for (auto item : data)
-        {
-            cout << item << endl; // print each item in the data vector
-        }
-    }
-    else if (opcode == "WAITING_END")
-    {
-        DEBUG_PRINT("Received WAITING_END response, setting LOBBY_MODE to 0\n");
-        LOBBY_MODE = 0; // set the lobby mode to 0
-    }
-    else
-    {
-        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
-    }
-}
-
-void process_response(const map<string, vector<string>> parsed_response, int socket)
-{
-    // Process the parsed response based on the opcode
-    string opcode = parsed_response.at("type").front();
-    vector<string> data = parsed_response.at("data");
-    if (opcode == "QUESTION")
-    {
-        // QUESTION response contains a question and options
-        // The first element will be the question, and the rest will be the options
-        // All will be printed
-        DEBUG_PRINT("Received QUESTION response\n");
-        // the first element will be the question
-        cout << BOLDYELLOW << "Question: " << data.front() << RESET << endl;
-        data.erase(data.begin()); // remove the question from the vector
-        // the rest will be the options
-        cout << BOLDYELLOW << "Options: " << endl;
-        int index = 0; // index for options
-        for (auto item : data)
-        {
-            cout << "   " << index << ". " << item << endl; // print each option
-            index++;
-        }
-        cout << RESET;
-
-        // Prompt the user for an answer
-        cout << BOLDYELLOW << "Please enter your answer (index of the option): " << RESET;
-        int answer;
-        cin >> answer; // read the answer from the user
-        // Validate the answer input
-        while (answer < 0 || answer >= data.size())
-        {
-            // if the answer is not valid, prompt the user again
-            cerr << ERROR << "Invalid choice. Please choose a valid option." << RESET << endl;
-            cout << BOLDYELLOW << "Please choose a game (0 for Checkers): ";
-            cin >> answer;
-        }
-        // Send the answer back to the server
-        if (send_to(socket, "ANSWER", to_string(answer)) < 0)
-        {
-            cerr << ERROR << "Failed to send answer to server" << RESET << endl;
-            return;
-        }
-    }
-    else if (opcode == "QUESTION_STR")
-    {
-        // QUESTION_STR response contains a question as a string
-        // This is used for the nickname question
-        DEBUG_PRINT("Received QUESTION_STR response\n");
-        cout << BOLDYELLOW << "Question: " << data.front() << RESET << endl;
-
-        // Prompt the user for an answer
-        string answer;
-        while (true)
-        {
-            cout << BOLDYELLOW << "Please enter your nickname: " << RESET;
-            cin >> answer; // read the answer from the user
-            if (cin.fail())
-            {
-                cin.clear();                                         // clear the error flag
-                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
-                cout << ERROR << "Invalid input, please try again.\n";
-                continue;
-            }
-            break;
-        }
-
-        // Send the answer back to the server
-        if (send_to(socket, "ANSWER", answer) < 0)
-        {
-            cerr << ERROR << "Failed to send answer to server" << RESET << endl;
-            return;
-        }
-    }
-    else if (opcode == "WAITING_END")
-    {
-        LOBBY_MODE = 0;
-    }
-    else
-    {
-        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
-    }
-}
-
 void process_response(const map<string, vector<string>> parsed_response, int socket, int *flag_to_set)
 {
     // Process the parsed response based on the opcode
@@ -538,7 +566,7 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
         // if the input is 'GOODBYE', set the flag to false
         DEBUG_PRINT("Received GOODBYE response, setting flag to true\n");
         *flag_to_set = 1; // set the flag to false
-        cout << BOLDYELLOW << "Goodbye!" << RESET << endl;
+        cout << BOLDYELLOW << data.front() << "Goodbye!" << RESET << endl;
         return; // exit the function
     }
     else if (opcode == "CHECKERS_END")
@@ -557,6 +585,87 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
             cout << BOLDYELLOW << data.front() << RESET << endl;
         }
         return; // exit the function
+    }
+    else if (opcode == "QUESTION")
+    {
+        // QUESTION response contains a question and options
+        // The first element will be the question, and the rest will be the options
+        // All will be printed
+        DEBUG_PRINT("Received QUESTION response\n");
+        // the first element will be the question
+        cout << BOLDYELLOW << "Question: " << data.front() << RESET << endl;
+        data.erase(data.begin()); // remove the question from the vector
+        // the rest will be the options
+        cout << BOLDYELLOW << "Options: " << endl;
+        int index = 0; // index for options
+        for (auto item : data)
+        {
+            cout << "   " << index << ". " << item << endl; // print each option
+            index++;
+        }
+        cout << RESET;
+
+        // Prompt the user for an answer
+        cout << BOLDYELLOW << "Please enter your answer (index of the option): " << RESET;
+        int answer;
+        cin >> answer; // read the answer from the user
+        // Validate the answer input
+        while (answer < 0 || answer >= data.size())
+        {
+            // if the answer is not valid, prompt the user again
+            cerr << ERROR << "Invalid choice. Please choose a valid option." << RESET << endl;
+            cout << BOLDYELLOW << "Please choose a game (0 for Checkers): ";
+            cin >> answer;
+        }
+        // Send the answer back to the server
+        if (send_to(socket, "ANSWER", to_string(answer)) < 0)
+        {
+            cerr << ERROR << "Failed to send answer to server" << RESET << endl;
+            return;
+        }
+    }
+    else if (opcode == "QUESTION_STR")
+    {
+        // QUESTION_STR response contains a question as a string
+        // This is used for the nickname question
+        DEBUG_PRINT("Received QUESTION_STR response\n");
+        cout << BOLDYELLOW << "Question: " << data.front() << RESET << endl;
+
+        // Prompt the user for an answer
+        string answer;
+        while (true)
+        {
+            cout << BOLDYELLOW << "Please enter your nickname: " << RESET;
+            cin >> answer; // read the answer from the user
+            if (cin.fail())
+            {
+                cin.clear();                                         // clear the error flag
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard invalid input
+                cout << ERROR << "Invalid input, please try again.\n";
+                continue;
+            }
+            break;
+        }
+
+        // Send the answer back to the server
+        if (send_to(socket, "ANSWER", answer) < 0)
+        {
+            cerr << ERROR << "Failed to send answer to server" << RESET << endl;
+            return;
+        }
+    }
+    else if (opcode == "WAITING_END")
+    {
+        LOBBY_MODE = 0;
+    }
+    else if (opcode == "TEXT")
+    {
+        // TEXT response contains a message to display
+        DEBUG_PRINT("Processing TEXT response\n");
+        for (auto item : data)
+        {
+            cout << item << endl; // print each item in the data vector
+        }
     }
     else
     {
@@ -632,22 +741,6 @@ void process_response(const map<string, vector<string>> parsed_response, string 
     }
 }
 
-void process_response(const map<string, vector<string>> parsed_response, bool *flag)
-{
-    // Process the parsed response based on the opcode
-    string opcode = parsed_response.at("type").front();
-    vector<string> data = parsed_response.at("data");
-    if (opcode == "GOODBYE")
-    {
-        DEBUG_PRINT("Received GOODBYE response, setting flag to false\n");
-        *flag = false; // set the flag to false
-    }
-    else
-    {
-        cerr << ERROR << "Unknown opcode received: " << opcode << RESET << endl;
-    }
-}
-
 void process_response(const map<string, vector<string>> parsed_response, Session *curr_sess)
 {
     // Process the parsed response based on the opcode
@@ -688,7 +781,7 @@ void get_response(int sock, string *resp)
     process_response(response_structured, resp);
 }
 
-void get_response(int sock, int *flag, int opt = 1)
+void get_response(int sock, int *flag = nullptr, int opt = 0)
 {
     string response = receive_from(sock);
     if (response.empty())
@@ -698,31 +791,19 @@ void get_response(int sock, int *flag, int opt = 1)
     map<string, vector<string>> response_structured = parsed_response(response);
     if (opt == 0)
         process_response(response_structured, sock, flag);
-    else if (opt == 1)
-        process_response(response_structured, flag);
 }
 
-void get_response(int sock, int option = 0)
+void get_response(int sock)
 {
+    int opt = 0; // to remove
     string response = receive_from(sock);
-    DEBUG_PRINT("Received response in get_response: " + response + "\n");
     if (response.empty())
     {
         throw runtime_error("No response received from server");
     }
     map<string, vector<string>> response_structured = parsed_response(response);
-    if (option == 0)
-    {
-        process_response(response_structured);
-    }
-    else if (option == 1)
-    {
-        process_response(response_structured, sock);
-    }
-    else
-    {
-        throw invalid_argument("Invalid option for get_response: " + option);
-    }
+    if (opt == 0)
+        process_response(response_structured, sock, nullptr);
 }
 
 void get_response(int sock, Session *curr_sess)
@@ -770,7 +851,6 @@ void waiting_message(const string &message)
     }
 }
 
-#pragma region Send Banner
 void print_banner()
 {
     DEBUG_PRINT("------------------ Printing banner -----------------\n");
@@ -783,7 +863,6 @@ void print_banner()
     )";
     cout << BOLDYELLOW << banner << RESET << endl;
 }
-#pragma endregion
 
 bool Session::is_full() const
 {

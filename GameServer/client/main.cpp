@@ -4,88 +4,11 @@ using namespace std;
 
 int main()
 {
-
+    int dummy_flag = 0;
+    int *dummy_ptr = &dummy_flag; // pointer to a dummy flag, used for get_response function
     print_banner();
-#pragma region Init
-    cout << "Client started" << endl;
-    // init socket
-    int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for connecting to a server
-    if (sock < 0)
-    {
-        cerr << ERROR << "Error creating socket: " << strerror(errno) << RESET << endl;
-        return -1;
-    }
-    DEBUG_PRINT("Socket created successfully\n");
-
-    // define target address
-    struct sockaddr_in ip4addr; // destination address
-    string dest_ip;
-    bool valid = false;
-    while (!valid)
-    {
-        cout << BOLDYELLOW << "Enter the server IP address [default: 127.0.0.1]: " << RESET;
-        cin >> dest_ip; // read the IP address from user input
-        // validate the IP address
-        if (dest_ip.empty())
-        {
-            cout << INFO << "Using default: localhost" << RESET << endl;
-            dest_ip = "127.0.0.1";
-        }
-        else if (dest_ip.length() > 15 || dest_ip.length() < 7)
-        {
-            cerr << ERROR << "Invalid IP address length. Please enter a valid IPv4 address." << RESET << endl;
-            continue;
-        }
-        else if (dest_ip.find_first_not_of("0123456789.") != string::npos)
-        {
-            cerr << ERROR << "Invalid characters in IP address. Please enter a valid IPv4 address." << RESET << endl;
-            continue;
-        }
-
-        // split the IP address into octets
-        int pos = 0;
-        int octet_count = 0;
-        string dest_ip_to_check = dest_ip + '.'; // append a dot to the end to handle the last octet
-        size_t dot_pos = dest_ip_to_check.find('.');
-        while (dot_pos != string::npos && octet_count < 5)
-        {
-            valid = true;
-            string octet = dest_ip_to_check.substr(pos, dot_pos - pos); // get the octet
-            if (octet.empty() || stoi(octet) < 0 || stoi(octet) > 255)
-            {
-                cerr << ERROR << "Invalid octet: " << octet << ". Each octet must be between 0 and 255." << RESET << endl;
-                valid = false; // set valid to false to continue the loop
-                break;         // exit the loop if an invalid octet is found
-            }
-            pos = dot_pos + 1;                // move to the next position after the dot
-            dot_pos = dest_ip_to_check.find('.', pos); // find the next dot
-            octet_count++;
-        }
-        if (!valid)
-            continue;
-        valid = true;
-    }
-
-    inet_pton(AF_INET, dest_ip.c_str(), &ip4addr.sin_addr);
-    cout << INFO << "Target address set: " << dest_ip << RESET << endl;
-
-    // set up socket address
-    struct sockaddr_in clientService;          // client address
-    clientService.sin_family = AF_INET;        // IPv4
-    clientService.sin_port = htons(PORT);      // port number
-    clientService.sin_addr = ip4addr.sin_addr; // bind socket to the target address
-    cout << INFO << "Socket address set: " << dest_ip << ":" << PORT << RESET << endl;
-    // DEBUG_PRINT("Socket address set: " + dest_ip + ":" + to_string(PORT) + "\n");
-
-    // connect to server
-    int iResult = connect(sock, (struct sockaddr *)&clientService, sizeof(clientService));
-    if (iResult < 0)
-    {
-        cerr << ERROR << "Error connecting to server: " << strerror(errno) << RESET << endl;
-        close(sock);
-        return -1;
-    }
-    cout << SUCCESS << "Connected to server at " << dest_ip << ":" << PORT << RESET << endl;
+#pragma region Init Client Socket
+    int sock = init_client_sock(); // initialize the client socket
 #pragma endregion
 
     int goodbye_received = 0;                      // flag to check if goodbye message is received
@@ -106,7 +29,7 @@ int main()
     // receive question: nickname from server
     try
     {
-        get_response(sock, 1); // 1 means we expect a question response
+        get_response(sock); // 1 means we expect a question response
     }
     catch (const runtime_error &e)
     {
@@ -127,7 +50,7 @@ int main()
     // Receive a question of choosing games from server
     try
     {
-        get_response(sock, 1); // 1 means we expect a question response
+        get_response(sock); // 1 means we expect a question response
     }
     catch (const runtime_error &e)
     {
@@ -148,7 +71,7 @@ int main()
     // receive question of game mode from server
     try
     {
-        get_response(sock, 1); // 1 means we expect a question response
+        get_response(sock); // 1 means we expect a question response
     }
     catch (const runtime_error &e)
     {
@@ -171,7 +94,7 @@ int main()
     {
         try
         {
-            get_response(sock, 0);
+            get_response(sock);
         }
         catch (const runtime_error &e)
         {
@@ -200,7 +123,7 @@ int main()
     // receive player ID from server
     try
     {
-        get_response(sock, 0); // 0 means we expect a text response
+        get_response(sock);
     }
     catch (const runtime_error &e)
     {
@@ -217,8 +140,9 @@ int main()
     DEBUG_PRINT("Received and processed player ID from server\n");
 #pragma endregion
 
+    int times_tried = 0;
 #pragma region Game Logic
-    while (goodbye_received == 0)
+    while (goodbye_received == 0 && times_tried < 10)
     {
         // receive gamestate from server, process it and send back the move
         try
@@ -229,14 +153,17 @@ int main()
         catch (const runtime_error &e)
         {
             cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
+            times_tried++;
         }
         catch (const invalid_argument &e)
         {
             cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+            times_tried++;
         }
         catch (...)
         {
             cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+            times_tried++;
         }
     }
 #pragma endregion

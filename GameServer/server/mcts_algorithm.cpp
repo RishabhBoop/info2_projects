@@ -1,6 +1,7 @@
 #include "mcts_algorithm.hpp"
 
 using namespace std;
+mutex file_save_mutex; // mutex to protect file operations
 
 MCTS_leaf *select_most_visited_child(MCTS_leaf *root_node)
 {
@@ -32,7 +33,7 @@ MCTS_leaf *select_best_child(MCTS_leaf *root_node)
     }
     // maximize for the current player, so we need to check the current player
     int current_player = root_node->state.get_current_player(); // get the current player
-    MCTS_leaf *best_child = nullptr;             // initialize best child
+    MCTS_leaf *best_child = nullptr;                            // initialize best child
 
     // check all children and select the one with the highest UCB value
     double max_rating = -1;                      // initialize max rating
@@ -40,7 +41,7 @@ MCTS_leaf *select_best_child(MCTS_leaf *root_node)
     {
         double calculated_rating = child->cal_rating(); // calculate the rating of the child
         // check if the rating is greater than the max rating
-        if (calculated_rating > max_rating )
+        if (calculated_rating > max_rating)
         {
             max_rating = calculated_rating;
             best_child = child;
@@ -53,10 +54,11 @@ MCTS_leaf *select_best_child(MCTS_leaf *root_node)
 
 MCTS_leaf *selection(MCTS_leaf *root)
 {
-    if (root == nullptr) return nullptr;
+    if (root == nullptr)
+        return nullptr;
     // iterative implementation
     MCTS_leaf *current_node = root;
-    while(current_node->num_children() > 0)
+    while (current_node->num_children() > 0)
     {
         if (current_node->state.TerminalState() != -1)
         {
@@ -64,13 +66,14 @@ MCTS_leaf *selection(MCTS_leaf *root)
             break;
         }
         // select the best child
-        MCTS_leaf* nextnode = select_best_child(current_node);
-        if (nextnode == nullptr || nextnode == current_node) {
+        MCTS_leaf *nextnode = select_best_child(current_node);
+        if (nextnode == nullptr || nextnode == current_node)
+        {
             // This indicates an issue, possibly in select_best_child or cal_rating
             DEBUG_PRINT("Warning: selection phase encountered issue selecting child. Breaking selection.\n");
             break;
-       }
-       current_node = nextnode;
+        }
+        current_node = nextnode;
     }
     return current_node;
 }
@@ -128,7 +131,7 @@ MCTS_leaf *expansion(MCTS_leaf *root_node)
     GameState new_game_state = root_node->state.clone();
     // change the player of the new game state
     new_game_state.switch_player();
-    Board* tmp_board = new_game_state.get_board();
+    Board *tmp_board = new_game_state.get_board();
     new_move.perform_move(tmp_board, new_move);
     // populate the possible moves of the new game state
     new_game_state.list_all_possible_moves(new_game_state.get_current_player());
@@ -236,7 +239,7 @@ void train(MCTS_leaf *root_node, int num_iterations)
             // expanded_node = select_best_child(selected_node);
             int result = simulation(selected_node);
             backpropagation(selected_node, result);
-        } 
+        }
         // // update the rating of all of the nodes in the tree
         // update_rating(root_node);
     }
@@ -283,7 +286,7 @@ MCTS_leaf *load_tree_helper(MCTS_leaf *root_node, string &full_input)
     // find matching end bracket
     int tmp_counter = 1; // holds counter for bracket, so we can find matching bracket
     size_t bracket_end = string::npos;
-    for (int i = bracket_start+1; i < full_input.length(); i++)
+    for (int i = bracket_start + 1; i < full_input.length(); i++)
     {
         if (full_input[i] == '[')
         {
@@ -317,7 +320,7 @@ MCTS_leaf *load_tree_helper(MCTS_leaf *root_node, string &full_input)
     while (full_input[0] != '$')
     {
         // load the next child
-        MCTS_leaf* child = load_tree_helper(new_leaf, full_input);
+        MCTS_leaf *child = load_tree_helper(new_leaf, full_input);
         if (child != nullptr)
         {
             new_leaf->children.push_back(child);
@@ -330,9 +333,9 @@ MCTS_leaf *load_tree_helper(MCTS_leaf *root_node, string &full_input)
     return new_leaf;
 }
 
-MCTS_leaf * load_tree(string full_input)
+MCTS_leaf *load_tree(string full_input)
 {
-    MCTS_leaf* root_node = nullptr;
+    MCTS_leaf *root_node = nullptr;
     try
     {
         root_node = load_tree_helper(root_node, full_input);
@@ -350,6 +353,69 @@ MCTS_leaf * load_tree(string full_input)
     }
 }
 
+MCTS_leaf *load_or_create_mcts_tree()
+{
+    // load the tree from file and reconstruct tree
+    MCTS_leaf *mcts_tree;
+    while (true)
+    {
+        ifstream input_file("mcts_tree.txt");
+        if (input_file.is_open())
+        {
+            DEBUG_PRINT("Loading MCTS tree from file...\n");
+            string raw_input;
+            getline(input_file, raw_input);
+            mcts_tree = load_tree(raw_input);
+            break;
+        }
+        else
+        {
+            DEBUG_PRINT("No MCTS tree file found. Creating a new one...\n");
+            // If no tree, create a new one and train it for 1000 iterations
+            // default board setup
+            Board board = array<array<Piece, 8>, 8>{{{Piece(NOPLAYER, 0, 0), Piece(PLAYER1, 0, 1), Piece(NOPLAYER, 0, 2), Piece(PLAYER1, 0, 3), Piece(NOPLAYER, 0, 4), Piece(PLAYER1, 0, 5), Piece(NOPLAYER, 0, 6), Piece(PLAYER1, 0, 7)},
+                                                     {Piece(PLAYER1, 1, 0), Piece(NOPLAYER, 1, 1), Piece(PLAYER1, 1, 2), Piece(NOPLAYER, 1, 3), Piece(PLAYER1, 1, 4), Piece(NOPLAYER, 1, 5), Piece(PLAYER1, 1, 6), Piece(NOPLAYER, 1, 7)},
+                                                     {Piece(NOPLAYER, 2, 0), Piece(PLAYER1, 2, 1), Piece(NOPLAYER, 2, 2), Piece(PLAYER1, 2, 3), Piece(NOPLAYER, 2, 4), Piece(PLAYER1, 2, 5), Piece(NOPLAYER, 2, 6), Piece(PLAYER1, 2, 7)},
+                                                     {Piece(NOPLAYER, 3, 0), Piece(NOPLAYER, 3, 1), Piece(NOPLAYER, 3, 2), Piece(NOPLAYER, 3, 3), Piece(NOPLAYER, 3, 4), Piece(NOPLAYER, 3, 5), Piece(NOPLAYER, 3, 6), Piece(NOPLAYER, 3, 7)},
+                                                     {Piece(NOPLAYER, 4, 0), Piece(NOPLAYER, 4, 1), Piece(NOPLAYER, 4, 2), Piece(NOPLAYER, 4, 3), Piece(NOPLAYER, 4, 4), Piece(NOPLAYER, 4, 5), Piece(NOPLAYER, 4, 6), Piece(NOPLAYER, 4, 7)},
+                                                     {Piece(PLAYER2, 5, 0), Piece(NOPLAYER, 5, 1), Piece(PLAYER2, 5, 2), Piece(NOPLAYER, 5, 3), Piece(PLAYER2, 5, 4), Piece(NOPLAYER, 5, 5), Piece(PLAYER2, 5, 6), Piece(NOPLAYER, 5, 7)},
+                                                     {Piece(NOPLAYER, 6, 0), Piece(PLAYER2, 6, 1), Piece(NOPLAYER, 6, 2), Piece(PLAYER2, 6, 3), Piece(NOPLAYER, 6, 4), Piece(PLAYER2, 6, 5), Piece(NOPLAYER, 6, 6), Piece(PLAYER2, 6, 7)},
+                                                     {Piece(PLAYER2, 7, 0), Piece(NOPLAYER, 7, 1), Piece(PLAYER2, 7, 2), Piece(NOPLAYER, 7, 3), Piece(PLAYER2, 7, 4), Piece(NOPLAYER, 7, 5), Piece(PLAYER2, 7, 6), Piece(NOPLAYER, 7, 7)}}};
+
+            GameState game_state(board, PLAYER1);
+            mcts_tree = new MCTS_leaf(game_state, Move(-1, -1, -1, -1, false, -1, -1), nullptr, {}, 0, 0, true, false);
+            DEBUG_PRINT("Created new MCTS tree with root node.\n");
+            DEBUG_PRINT("Training new MCTS tree...\n");
+            train(mcts_tree, 1000);
+            DEBUG_PRINT("Training complete. Saving new MCTS tree...\n");
+            save_and_exit(mcts_tree);
+            DEBUG_PRINT("New MCTS tree created and trained and saved.\n");
+        }
+    }
+    return mcts_tree;
+}
+
+int save_and_exit(MCTS_leaf *mcts_tree)
+{
+    ofstream output_file("mcts_tree.txt");
+    bool file_opened = false;
+    while (!file_opened)
+    {
+        if (output_file.is_open())
+        {
+            DEBUG_PRINT("Can open file to save MCTS tree.\n");
+            save_tree(mcts_tree, output_file);
+            output_file.close();
+            file_opened = true;
+        }
+    }
+    DEBUG_PRINT("saved tree to file!\n");
+    // destroy the tree
+    destroy_tree(mcts_tree);
+    DEBUG_PRINT("Tree destroyed!\n");
+    return 0;
+}
+
 void destroy_tree(MCTS_leaf *root_node)
 {
     if (root_node == nullptr)
@@ -359,7 +425,7 @@ void destroy_tree(MCTS_leaf *root_node)
 
     // Create a copy of the children pointers
     vector<MCTS_leaf *> children_to_delete = root_node->children;
-    // Clear the original vector 
+    // Clear the original vector
     root_node->children.clear();
 
     // Recursively delete using the copied pointers
@@ -439,30 +505,6 @@ array<array<Piece, 8>, 8> create_board(string choice)
         return {};
     }
 }
-
-#pragma region Save and Exit MCTS Tree
-// ------ SAVES AND DESTROYS TRREE -----
-int save_and_exit(MCTS_leaf *mcts_tree)
-{
-    ofstream output_file("mcts_tree.txt");
-    if (output_file.is_open())
-    {
-        save_tree(mcts_tree, output_file);
-        output_file.close();
-    }
-    else
-    {
-        cout << "Unable to open file\n";
-        destroy_tree(mcts_tree);
-        return 1;
-    }
-    DEBUG_PRINT("saved tree to file!\n");
-    // destroy the tree
-    destroy_tree(mcts_tree);
-    DEBUG_PRINT("Tree destroyed!\n");
-    return 0;
-}
-#pragma endregion
 
 void clear_screen()
 {

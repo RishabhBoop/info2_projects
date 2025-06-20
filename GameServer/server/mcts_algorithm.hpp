@@ -125,6 +125,13 @@ void save_tree(MCTS_leaf*,ofstream&);
 MCTS_leaf* load_tree(string);
 
 /**
+ * @brief Loads an existing MCTS tree from a file or creates a new one if the file does not exist.
+ * 
+ * @return MCTS_leaf* 
+ */
+MCTS_leaf* load_or_create_mcts_tree();
+
+/**
  * @brief deletes the whole tree, freeing up the used memory
  * @param root_node The root node of the MCTS tree.
  */

@@ -15,59 +15,12 @@ mutex all_sessions_mutex;
 int main()
 {
     print_banner();
-#pragma region Initialize Socket
-    /* init socket
-     * This creates a TCP socket that the server will use to listen for incoming connections.
-     */
-    int sock = socket(AF_INET, SOCK_STREAM, 0); // create a TCP socket for listening for incoming connections
+    int sock = init_server_sock(); // initialize the server socket
     if (sock < 0)
     {
-        cerr << ERROR << "Error creating socket: " << strerror(errno) << RESET << endl;
-        return -1;
+        cerr << ERROR << "Error initializing server socket" << RESET << endl;
+        return -1; // exit if socket initialization failed
     }
-    DEBUG_PRINT("Socket created successfully, now we can listen to incoming connections\n");
-#pragma endregion
-
-#pragma region specify connection
-    /* specify connection
-     * It is the connection (ports, addresses, etc.) that the server will use to accept incoming connections.
-     */
-    struct sockaddr_in server_service;
-    server_service.sin_addr.s_addr = INADDR_ANY; // allow any ipv4 address
-    server_service.sin_family = AF_INET;         // IPv4
-    server_service.sin_port = htons(PORT);       // listen on port PORT
-    DEBUG_PRINT("Connection specified: " + string(inet_ntoa(server_service.sin_addr)) + ":" + to_string(ntohs(server_service.sin_port)) + "\n");
-#pragma endregion
-
-#pragma region Bind socket to port
-    /* Bind socket to port
-     * This binds the socket to the specified service.
-     * It allows the server to listen for incoming connections on that port.
-     */
-    int res = bind(sock, (struct sockaddr *)&server_service, sizeof(server_service));
-    if (res < 0)
-    {
-        cerr << ERROR << "Error binding socket: " << strerror(errno) << RESET << endl;
-        close(sock);
-        return -1;
-    }
-    DEBUG_PRINT("--------- Server is ready to accept connections ---------\n");
-#pragma endregion
-
-#pragma region Listen for incoming connections
-    /* listen for incoming connections
-     * This tells the socket to listen for incoming connections.
-     */
-    res = listen(sock, SOMAXCONN);
-    if (res < 0)
-    {
-        cerr << ERROR << "Error listening on socket: " << strerror(errno) << RESET << endl;
-        close(sock);
-        return -1;
-    }
-    DEBUG_PRINT("Socket is now listening for incoming connections\n");
-    cout << INFO << "Server is listening on port " << PORT << RESET << endl;
-#pragma endregion
 
     fd_set read_fds;   // file descriptor set for select
     struct timeval tv; // Struct to specify timeout
@@ -77,7 +30,7 @@ int main()
         FD_ZERO(&read_fds);      // clear the set
         FD_SET(sock, &read_fds); // add the server socket to the set
 
-        tv.tv_sec = 30;  // set timeout to 30s
+        tv.tv_sec = 30; // set timeout to 30s
         tv.tv_usec = 0; // no microseconds
 
         int activity = select(sock + 1, &read_fds, nullptr, nullptr, &tv);
@@ -333,7 +286,7 @@ void thread_function(Player *player)
 
 #pragma endregion
 
-    /* ---------------- Start game thread --------------------------*/ // TODOOOOOOOOOOOOOOOOOOOOO
+    /* ---------------- Start game thread --------------------------*/
     DEBUG_PRINT("------------------ Starting game thread -----------------\n");
     // The client chose to play against AI
     if (player->get_chosen_game() == 0 && player->get_chosen_game_mode() == 1)
@@ -443,11 +396,6 @@ void thread_function(Player *player)
     {
         cerr << ERROR << "Unknown game or game mode chosen by client" << RESET << endl;
     }
-
-    // now that we have a session, we can start the game
-    // simulate the game for 5 seconds
-    // this_thread::sleep_for(chrono::seconds(5)); // simulate the game for 5 seconds
-
     /* ---------------- End Start game thread --------------------------*/
 
     /* ---------------- close socket --------------------------*/
@@ -477,39 +425,11 @@ int gameplay_ai(Player *player)
 
 #pragma region Load MCTS Tree
     // load the tree from file and reconstruct tree
-    MCTS_leaf *mcts_tree;
-    while (true)
-    {
-        ifstream input_file("mcts_tree.txt");
-        if (input_file.is_open())
-        {
-            string raw_input;
-            getline(input_file, raw_input);
-            mcts_tree = load_tree(raw_input);
-            break;
-        }
-        else
-        {
-            // If no tree, create a new one and train it for 1000 iterations
-            Board board = array<array<Piece, 8>, 8>{{{Piece(NOPLAYER, 0, 0), Piece(PLAYER1, 0, 1), Piece(NOPLAYER, 0, 2), Piece(PLAYER1, 0, 3), Piece(NOPLAYER, 0, 4), Piece(PLAYER1, 0, 5), Piece(NOPLAYER, 0, 6), Piece(PLAYER1, 0, 7)},
-                                                     {Piece(PLAYER1, 1, 0), Piece(NOPLAYER, 1, 1), Piece(PLAYER1, 1, 2), Piece(NOPLAYER, 1, 3), Piece(PLAYER1, 1, 4), Piece(NOPLAYER, 1, 5), Piece(PLAYER1, 1, 6), Piece(NOPLAYER, 1, 7)},
-                                                     {Piece(NOPLAYER, 2, 0), Piece(PLAYER1, 2, 1), Piece(NOPLAYER, 2, 2), Piece(PLAYER1, 2, 3), Piece(NOPLAYER, 2, 4), Piece(PLAYER1, 2, 5), Piece(NOPLAYER, 2, 6), Piece(PLAYER1, 2, 7)},
-                                                     {Piece(NOPLAYER, 3, 0), Piece(NOPLAYER, 3, 1), Piece(NOPLAYER, 3, 2), Piece(NOPLAYER, 3, 3), Piece(NOPLAYER, 3, 4), Piece(NOPLAYER, 3, 5), Piece(NOPLAYER, 3, 6), Piece(NOPLAYER, 3, 7)},
-                                                     {Piece(NOPLAYER, 4, 0), Piece(NOPLAYER, 4, 1), Piece(NOPLAYER, 4, 2), Piece(NOPLAYER, 4, 3), Piece(NOPLAYER, 4, 4), Piece(NOPLAYER, 4, 5), Piece(NOPLAYER, 4, 6), Piece(NOPLAYER, 4, 7)},
-                                                     {Piece(PLAYER2, 5, 0), Piece(NOPLAYER, 5, 1), Piece(PLAYER2, 5, 2), Piece(NOPLAYER, 5, 3), Piece(PLAYER2, 5, 4), Piece(NOPLAYER, 5, 5), Piece(PLAYER2, 5, 6), Piece(NOPLAYER, 5, 7)},
-                                                     {Piece(NOPLAYER, 6, 0), Piece(PLAYER2, 6, 1), Piece(NOPLAYER, 6, 2), Piece(PLAYER2, 6, 3), Piece(NOPLAYER, 6, 4), Piece(PLAYER2, 6, 5), Piece(NOPLAYER, 6, 6), Piece(PLAYER2, 6, 7)},
-                                                     {Piece(PLAYER2, 7, 0), Piece(NOPLAYER, 7, 1), Piece(PLAYER2, 7, 2), Piece(NOPLAYER, 7, 3), Piece(PLAYER2, 7, 4), Piece(NOPLAYER, 7, 5), Piece(PLAYER2, 7, 6), Piece(NOPLAYER, 7, 7)}}};
-            // default board
-            GameState game_state(board, PLAYER1);
-            mcts_tree = new MCTS_leaf(game_state, Move(-1, -1, -1, -1, false, -1, -1), nullptr, {}, 0, 0, true, false);
-            train(mcts_tree, 1000);
-            save_and_exit(mcts_tree);
-        }
-    }
+    MCTS_leaf *mcts_tree = load_or_create_mcts_tree();
 #pragma endregion
     DEBUG_PRINT("MCTS tree loaded successfully\n");
 
-#pragma region Ask which player/send which player they are
+#pragma region Send which player they are
     ptr_session->player1->set_id(1); // set player 1 id
     // send to the client which player they are
     string player_id_str = "You are player " + to_string(ptr_session->player1->get_id()) + ".";
@@ -528,116 +448,151 @@ int gameplay_ai(Player *player)
     MCTS_leaf *current_node = mcts_tree;
     ptr_session->curr_state = current_node->state; // copy the session from the current node to the player session
     int tmpres = -1;                               // variable to store the result of the send_to function
-    while (true)
+    bool want_to_play_on = true;                   // flag to check if the players want to play again
+    while (want_to_play_on)
     {
-        DEBUG_PRINT("Inside game loop\n");
-        // populate possible moves for the current node
-        current_node->state.list_all_possible_moves(current_node->state.get_current_player());
-        // if current node is terminal, end the game
-        int terminal = current_node->state.TerminalState();
-        if (terminal != -1)
-        {
-            DEBUG_PRINT("Game is over, terminal state reached\n");
-            send_to(player->get_socket(), "CHECKERS_END", "Game over! Player " + to_string(terminal) + " won!");
-            send_to(player->get_socket(), "GOODBYE");
-            return save_and_exit(mcts_tree);
-        }
-        // Player's turn
-        if (current_node->state.get_current_player() == player->get_id())
-        {
-            sleep(1);    // sleep for 1 second to give the player time to read the message
-            tmpres = -1; // reset tmpres for the next send_to
 
-            /* ------------------- send gamestate (board and moves) ------------------- */
-            // encode gamestate to string
-            string gamestate_str = current_node->state.get_state_info();
-            string board_str = current_node->state.get_board()->get_board_info();
-            while (tmpres == -1)
+        while (true)
+        {
+            DEBUG_PRINT("Inside game loop\n");
+            // populate possible moves for the current node
+            current_node->state.list_all_possible_moves(current_node->state.get_current_player());
+            // if current node is terminal, end the game
+            int terminal = current_node->state.TerminalState();
+            if (terminal != -1)
             {
-                tmpres = send_to(player->get_socket(), "CHECKERS_STATE", gamestate_str);
-            }
-            DEBUG_PRINT("Sent gamestate to player\n");
-            tmpres = -1; // reset tmpres for the next send_to
-            // send_to(player->get_socket(), "CHECKERS_STATE", gamestate_str);
-            /* ------------------- store move from client in "prev_move" ------------------- */
-            get_response(player_socket, ptr_session);
-            if (ptr_session->quit_requested)
-            {
-                send_to(player->get_socket(), "GOODBYE");
-                DEBUG_PRINT("Player requested to quit the game\n");
-                return save_and_exit(mcts_tree);
-            }
-            /* ------------------- perform move on the gamestate ------------------- */
-            // perform the move by searching the children of the current node and finding the one that matches the move
-            string selected_move_str = ptr_session->prev_move.get_move_info();
-            // select a move that has not been explored yet
-            // load all of the children into a set
-            map<string, MCTS_leaf *> moves_children;
-            for (MCTS_leaf *child : current_node->children)
-            {
-                moves_children.insert({child->get_move_info(), child});
-            }
-            // check if this move has already been explored by the AI
-            bool found = false;
-            for (Move move : current_node->state.possible_moves)
-            {
-                // map.find() returns an iterator to the element if found, or end() if not found
-                auto it = moves_children.find(selected_move_str);
-                if (it != moves_children.end())
+                ptr_session->curr_state.get_board()->print_Board(); // print the board for debugging purposes
+                DEBUG_PRINT("Game is over, terminal state reached\n");
+                string string_to_send = "Game over! Player " + to_string(terminal) + " won!";
+                send_to(player->get_socket(), "CHECKERS_END", string_to_send);
+
+                // ask if the players want to play again
+                string question = "Do you want to play again? (yes/no)";
+                if (send_to(player->get_socket(), "QUESTION_STR", question) < 0)
                 {
-                    // if the child move matches, we can select it
-                    found = true;
-                    current_node = it->second;
-                    break;
+                    cerr << ERROR << "Error sending question to player 1: " << strerror(errno) << RESET << endl;
+                    want_to_play_on = false; // set the flag to false to exit the game loop
+                }
+                string answer1;
+                string *ptr_answer1 = &answer1;
+
+                get_response(player->get_socket(), ptr_answer1);
+                if (answer1 == "Yes")
+                {
+                    {
+                        // if player wants to play again, save the mcts tree to file
+                        save_and_exit(mcts_tree); // save the MCTS tree to file
+                        // restart the game
+                        DEBUG_PRINT("MCTS tree saved to file\n");
+                        // reset the game state
+                        ptr_session->curr_state = load_or_create_mcts_tree()->state; // reset the game state to the initial state
+                    }
+                    ptr_session->current_player = player; // reset the current player to player1
+                    continue;                             // continue the game loop
+                }
+                else
+                {
+                    want_to_play_on = false; // set the flag to false to exit the game loop
+                }
+                send_to(player->get_socket(), "GOODBYE");
+                break; // exit the game loop
+            }
+            // Player's turn
+            if (current_node->state.get_current_player() == player->get_id())
+            {
+                sleep(1);    // sleep for 1 second to give the player time to read the message
+                tmpres = -1; // reset tmpres for the next send_to
+
+                /* ------------------- send gamestate (board and moves) ------------------- */
+                // encode gamestate to string
+                string gamestate_str = current_node->state.get_state_info();
+                string board_str = current_node->state.get_board()->get_board_info();
+                while (tmpres == -1)
+                {
+                    tmpres = send_to(player->get_socket(), "CHECKERS_STATE", gamestate_str);
+                }
+                DEBUG_PRINT("Sent gamestate to player\n");
+                tmpres = -1; // reset tmpres for the next send_to
+                // send_to(player->get_socket(), "CHECKERS_STATE", gamestate_str);
+                /* ------------------- store move from client in "prev_move" ------------------- */
+                get_response(player_socket, ptr_session);
+                if (ptr_session->quit_requested)
+                {
+                    send_to(player->get_socket(), "GOODBYE");
+                    DEBUG_PRINT("Player requested to quit the game\n");
+                    return save_and_exit(mcts_tree);
+                }
+                /* ------------------- perform move on the gamestate ------------------- */
+                // perform the move by searching the children of the current node and finding the one that matches the move
+                string selected_move_str = ptr_session->prev_move.get_move_info();
+                // select a move that has not been explored yet
+                // load all of the children into a set
+                map<string, MCTS_leaf *> moves_children;
+                for (MCTS_leaf *child : current_node->children)
+                {
+                    moves_children.insert({child->get_move_info(), child});
+                }
+                // check if this move has already been explored by the AI
+                bool found = false;
+                for (Move move : current_node->state.possible_moves)
+                {
+                    // map.find() returns an iterator to the element if found, or end() if not found
+                    auto it = moves_children.find(selected_move_str);
+                    if (it != moves_children.end())
+                    {
+                        // if the child move matches, we can select it
+                        found = true;
+                        current_node = it->second;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    Move selected_move = ptr_session->prev_move; // get the move from the session
+                    // if the AI has not explored this move yet, we need to create a new child node
+                    // create a new game state with the selected move
+                    GameState new_game_state = current_node->state.clone();
+                    // change the player of the new game state
+                    new_game_state.switch_player();
+                    // perform move
+                    Board *tmp_board = new_game_state.get_board();
+                    selected_move.perform_move(tmp_board, selected_move);
+                    // populate the possible moves of the new game state
+                    new_game_state.list_all_possible_moves(new_game_state.get_current_player());
+                    // create a new child node with the new game state and add to the tree
+                    MCTS_leaf *new_child = new MCTS_leaf(new_game_state, selected_move, current_node);
+                    current_node->children.push_back(new_child);
+                    current_node = new_child;
+                    // update the session with the new game state
+                    ptr_session->curr_state = current_node->state; // copy the session from the current node to the player session
+
+                    // train the AI on this new node
+                    train(current_node, 20);
                 }
             }
-            if (!found)
+            else
             {
-                Move selected_move = ptr_session->prev_move; // get the move from the session
-                // if the AI has not explored this move yet, we need to create a new child node
-                // create a new game state with the selected move
-                GameState new_game_state = current_node->state.clone();
-                // change the player of the new game state
-                new_game_state.switch_player();
-                // perform move
-                Board *tmp_board = new_game_state.get_board();
-                selected_move.perform_move(tmp_board, selected_move);
-                // populate the possible moves of the new game state
-                new_game_state.list_all_possible_moves(new_game_state.get_current_player());
-                // create a new child node with the new game state and add to the tree
-                MCTS_leaf *new_child = new MCTS_leaf(new_game_state, selected_move, current_node);
-                current_node->children.push_back(new_child);
-                current_node = new_child;
-                // update the session with the new game state
-                ptr_session->curr_state = current_node->state; // copy the session from the current node to the player session
-
-                // train the AI on this new node
-                train(current_node, 20);
+                // AI's turn
+                DEBUG_PRINT("AI's turn!\n");
+                // AI will play
+                // select the best move from the MCTS tree
+                MCTS_leaf *newnode = select_most_visited_child(current_node);
+                // if newnode is current_node
+                if (newnode == current_node)
+                {
+                    // we are not at the terminal state,
+                    // which means the AI has not expolred this part of the tree yet.
+                    // so we need to expand the tree by training the ai
+                    train(newnode, 30);
+                    // select the best child of the new node
+                    newnode = select_most_visited_child(newnode);
+                }
+                current_node = newnode;
+                // update the game session
+                ptr_session->curr_state = current_node->state; // copy the session from the new node to the player session
             }
-        }
-        else
-        {
-            // AI's turn
-            cout << "AI's turn!\n";
-            // AI will play
-            // select the best move from the MCTS tree
-            MCTS_leaf *newnode = select_most_visited_child(current_node);
-            // if newnode is current_node
-            if (newnode == current_node)
-            {
-                // we are not at the terminal state,
-                // which means the AI has not expolred this part of the tree yet.
-                // so we need to expand the tree by training the ai
-                train(newnode, 30);
-                // select the best child of the new node
-                newnode = select_most_visited_child(newnode);
-            }
-            current_node = newnode;
-            // update the game session
-            ptr_session->curr_state = current_node->state; // copy the session from the new node to the player session
         }
     }
-
 #pragma endregion
 
     return save_and_exit(mcts_tree);
@@ -694,56 +649,92 @@ int gameplay_multiplayer(Session *sess) // arguments TBD
     }
 #pragma endregion
 
-    sleep(1); // sleep for 1 second to
+    sleep(1); // sleep for 1 second for mysterious reasons
 
-#pragma region Game Loop
-    while (true)
+    bool want_to_play_on = true; // flag to check if the players want to play on
+
+    while (want_to_play_on)
     {
-        DEBUG_PRINT("Inside game loop\n");
-        // populate possible moves for the current node
-        sess->curr_state.list_all_possible_moves(sess->curr_state.get_current_player());
-        // if current node is terminal, end the game
-        int terminal = sess->curr_state.TerminalState();
-        DEBUG_PRINT("Terminal state: " + to_string(terminal) + "\n");
-        if (terminal != -1)
+#pragma region Game Loop
+        while (true)
         {
-            sess->curr_state.get_board()->print_Board(); // print the board for debugging purposes
-            DEBUG_PRINT("Game is over, terminal state reached\n");
-            string string_to_send = "Game over! Player " + to_string(terminal) + " won!";
-            send_to(player1_socket, "CHECKERS_END", string_to_send);
-            send_to(player2_socket, "CHECKERS_END", string_to_send);
-            send_to(player1_socket, "GOODBYE");
-            send_to(player2_socket, "GOODBYE");
-            return 0;
-        }
-        // Player's turn
-        Player *current_player_obj = sess->current_player;
-        DEBUG_PRINT("Current player: " + to_string(sess->current_player->get_id()) + "\n");
+            DEBUG_PRINT("Inside game loop\n");
+            // populate possible moves for the current node
+            sess->curr_state.list_all_possible_moves(sess->curr_state.get_current_player());
+            // if current node is terminal, end the game
+            int terminal = sess->curr_state.TerminalState();
+            DEBUG_PRINT("Terminal state: " + to_string(terminal) + "\n");
+            if (terminal != -1)
+            {
+                sess->curr_state.get_board()->print_Board(); // print the board for debugging purposes
+                DEBUG_PRINT("Game is over, terminal state reached\n");
+                string string_to_send = "Game over! Player " + to_string(terminal) + " won!";
+                send_to(player1_socket, "CHECKERS_END", string_to_send);
+                send_to(player2_socket, "CHECKERS_END", string_to_send);
 
-        /* ------------------- send gamestate (board and moves) ------------------- */
-        // encode gamestate to string
-        string gamestate_str = sess->curr_state.get_state_info();
-        if (send_to(sess->current_player->get_socket(), "CHECKERS_STATE", gamestate_str) < 0)
-        {
-            cerr << ERROR << "Error sending state to player " << sess->current_player->get_id() << RESET << endl;
-            return -1;
-        }
-        DEBUG_PRINT("Sent gamestate to player\n");
+                // ask if the players want to play again
+                string question = "Do you want to play again? (yes/no)";
+                if (send_to(player1_socket, "QUESTION_STR", question) < 0)
+                {
+                    cerr << ERROR << "Error sending question to player 1: " << strerror(errno) << RESET << endl;
+                    want_to_play_on = false; // set the flag to false to exit the game loop
+                }
+                if (send_to(player2_socket, "QUESTION_STR", question) < 0)
+                {
+                    cerr << ERROR << "Error sending question to player 2: " << strerror(errno) << RESET << endl;
+                    want_to_play_on = false; // set the flag to false to exit the game loop
+                }
+                string answer1;
+                string *ptr_answer1 = &answer1;
+                string answer2;
+                string *ptr_answer2 = &answer2;
 
-        /* ------------------- store move from client in "prev_move" ------------------- */
-        get_response(sess->current_player->get_socket(), sess);
-        if (sess->quit_requested)
-        {
-            send_to(player1_socket, "GOODBYE");
-            send_to(player2_socket, "GOODBYE");
-            return 0; // quit game
+                get_response(player1_socket, ptr_answer1);
+                get_response(player2_socket, ptr_answer2);
+                if (answer1 == "Yes" && answer2 == "Yes")
+                {
+                    // if both players want to play again, reset the game state
+                    sess->curr_state = GameState(board, PLAYER1); // reset the game state
+                    sess->current_player = player1;               // reset the current player to player1
+                    continue;                                     // continue the game loop
+                }
+                else
+                {
+                    want_to_play_on = false; // set the flag to false to exit the game loop
+                }
+                send_to(player1_socket, "GOODBYE");
+                send_to(player2_socket, "GOODBYE");
+                break; // exit the game loop
+            }
+            // Player's turn
+            Player *current_player_obj = sess->current_player;
+            DEBUG_PRINT("Current player: " + to_string(sess->current_player->get_id()) + "\n");
+
+            /* ------------------- send gamestate (board and moves) ------------------- */
+            // encode gamestate to string
+            string gamestate_str = sess->curr_state.get_state_info();
+            if (send_to(sess->current_player->get_socket(), "CHECKERS_STATE", gamestate_str) < 0)
+            {
+                cerr << ERROR << "Error sending state to player " << sess->current_player->get_id() << RESET << endl;
+                return -1;
+            }
+            DEBUG_PRINT("Sent gamestate to player\n");
+
+            /* ------------------- store move from client in "prev_move" ------------------- */
+            get_response(sess->current_player->get_socket(), sess);
+            if (sess->quit_requested)
+            {
+                send_to(player1_socket, "GOODBYE");
+                send_to(player2_socket, "GOODBYE");
+                return 0; // quit game
+            }
+            /* ------------------- perform move on the gamestate ------------------- */
+            // perform the move by searching the children of the current node and finding the one that matches the move
+            sess->curr_state.get_board()->perform_move(sess->prev_move);
+            sess->curr_state.switch_player();
+            // switch the current player in the session
+            sess->current_player = (sess->current_player == player1) ? player2 : player1;
         }
-        /* ------------------- perform move on the gamestate ------------------- */
-        // perform the move by searching the children of the current node and finding the one that matches the move
-        sess->curr_state.get_board()->perform_move(sess->prev_move);
-        sess->curr_state.switch_player();
-        // switch the current player in the session
-        sess->current_player = (sess->current_player == player1) ? player2 : player1;
     }
 #pragma endregion
     return 0;

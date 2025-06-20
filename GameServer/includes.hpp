@@ -57,6 +57,8 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 #define BGMAGENTA "\033[45m" /* Magenta */
 #define BGCYAN "\033[46m"    /* Cyan */
 #define BGWHITE "\033[47m"   /* White */
+#define DEFAULT_BG "\033[49m" /* Default Background */
+
 
 #define SUCCESS BOLDGREEN
 #define ERROR BOLDRED
@@ -64,8 +66,23 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 #define WARNING BOLDYELLOW
 #define DEBUG_COLOR BOLDCYAN
 
+// For Checkers game
+#define PLAYER1_COLOR BOLDMAGENTA
+#define PLAYER2_COLOR BOLDCYAN
+#define EMPTY_FIELD_COLOR DEFAULT_BG
+#define PLAYER1_COLOR_BG BGMAGENTA
+#define PLAYER2_COLOR_BG BGCYAN
+#define SELECTED_FIELD_COLOR BGWHITE
+#define NOT_SELECTED_FIELD_COLOR DEFAULT_BG
+
 #endif
 
+#ifndef CHCKERS_PLAYER_DEF
+#define CHCKERS_PLAYER_DEF
+#define PLAYER1 1
+#define PLAYER2 2
+#define NOPLAYER 0
+#endif
 
 #ifdef DEBUG
 #define DEBUG_PRINT(X) cout << DEBUG_COLOR << X << RESET;
