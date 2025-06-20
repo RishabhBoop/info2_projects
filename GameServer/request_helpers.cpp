@@ -261,7 +261,7 @@ bool opcode_is_valid(const string opcode)
 bool opcode_is_valid(const string opcode, const string type)
 {
     if (type == "empty data allowed")
-        return opcode == "HEY" || opcode == "PERFECT" || opcode == "WAITING_END" || opcode == "OK" || opcode == "GOODBYE";
+        return opcode == "HEY" || opcode == "PERFECT" || opcode == "WAITING_END" || opcode == "OK";
     else
         return opcode == "HEY" || opcode == "PERFECT" || opcode == "TEXT" || opcode == "WAITING" || opcode == "WAITING_END" || opcode == "OK" || opcode == "QUESTION" || opcode == "QUESTION_STR" || opcode == "ANSWER" || opcode == "CHECKERS_STATE" || opcode == "CHECKERS_MOVES" || opcode == "CHECKERS_END" || opcode == "GOODBYE";
 }
@@ -530,7 +530,7 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
             {
                 // if the input is 'q', send a CHECKERS_END request to the server
                 send_to(socket, "CHECKERS_MOVES", "q"); // send a surrender request
-                cout << BOLDYELLOW << "You surrendered!!\nGoodbye!" << RESET << endl;
+                cout << BOLDYELLOW << "You surrendered!!\n" << RESET << endl;
                 // close the socket and exit the program TODO: close the socket properly
                 // *flag_to_set = 1; // set the flag to true
                 // exit(0); // exit the program

@@ -286,6 +286,7 @@ void thread_function(Player *player)
 
 #pragma endregion
 
+#pragma region Start Game Thread
     /* ---------------- Start game thread --------------------------*/
     DEBUG_PRINT("------------------ Starting game thread -----------------\n");
     // The client chose to play against AI
@@ -403,6 +404,7 @@ void thread_function(Player *player)
     cout << INFO << "Client socket closed" << RESET << endl;
     /* ---------------- End close socket --------------------------*/
     DEBUG_PRINT("Thread finished for client socket: " + to_string(client_sock) + "\n");
+#pragma endregion
 
     return;
 }
@@ -724,8 +726,8 @@ int gameplay_multiplayer(Session *sess) // arguments TBD
             get_response(sess->current_player->get_socket(), sess);
             if (sess->quit_requested)
             {
-                send_to(player1_socket, "GOODBYE");
-                send_to(player2_socket, "GOODBYE");
+                send_to(player1_socket, "GOODBYE", "player " + to_string(sess->quit_requested) + " requested to quit\n");
+                send_to(player2_socket, "GOODBYE", "player " + to_string(sess->quit_requested) + " requested to quit\n");
                 return 0; // quit game
             }
             /* ------------------- perform move on the gamestate ------------------- */
