@@ -39,5 +39,13 @@ mcts_tree.txt
 build/
 bin/
 
+# Archives
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.rar
+*.7z
+
 # doxygen
 */html
