@@ -520,7 +520,7 @@ int gameplay_ai(Player *player)
                 get_response(player_socket, ptr_session);
                 if (ptr_session->quit_requested)
                 {
-                    send_to(player->get_socket(), "GOODBYE");
+                    send_to(player->get_socket(), "GOODBYE", "oooooooooooooooooooooo\n");
                     DEBUG_PRINT("Player requested to quit the game\n");
                     return save_and_exit(mcts_tree);
                 }
