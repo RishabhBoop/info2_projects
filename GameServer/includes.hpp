@@ -95,12 +95,21 @@ https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 #endif
 
 
-#ifdef __GNUC__
-#define OS_LINUX 1
-#elif defined(_WIN64)
-#define OS_LINUX 0
+#if defined(__APPLE__)
+    #define BINDCALL ::bind
+    #define OS_MACOS 1
+    #define OS_LINUX 0 
+    #define OS_WINDOWS 0
+#elif defined(_WIN64) || defined(_WIN32)
+  #define OS_LINUX 0
+  #define OS_MACOS 0
+  #define OS_WINDOWS 1
+#elif defined(__linux__)
+  #define BINDCALL bind
+  #define OS_MACOS 0
+  #define OS_LINUX 1
+  #define OS_WIDNOWS 0
 #endif
-
 
 #define BUFFER_SIZE 1024
 #define PORT 26000

@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.22.1)
 project(Info2-projects VERSION 0.1.0 LANGUAGES C CXX)
 
 set(SELECTED_PROJECT "GameServer" CACHE STRING "Which sub-project to build: GameServer, MCTS_checkers")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set_property(CACHE SELECTED_PROJECT PROPERTY STRINGS GameServer MCTS_checkers)
 
 # If Debug, then add cxx flag
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build detected")
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         message(STATUS "Detected Clang or GCC compiler")
         add_compile_options(-fsanitize=address -g)
         add_link_options(-fsanitize=address -static-libasan -g)

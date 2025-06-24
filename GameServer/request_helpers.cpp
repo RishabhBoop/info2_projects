@@ -36,7 +36,7 @@ int init_server_sock()
      * This binds the socket to the specified service.
      * It allows the server to listen for incoming connections on that port.
      */
-    int res = bind(sock, (struct sockaddr *)&server_service, sizeof(server_service));
+    int res = BINDCALL(sock, (struct sockaddr *)&server_service, sizeof(server_service));
     if (res < 0)
     {
         cerr << ERROR << "Error binding socket: " << strerror(errno) << RESET << endl;
