@@ -331,13 +331,16 @@ void thread_function(Player *player)
     // The client chose to play against another player
     else if (player->get_chosen_game() == 0 && player->get_chosen_game_mode() == 0)
     {
+        int not_full = ptr_curr_sess->is_full();
+        int *ptr_not_full = &not_full;
+        thread waiting_thread(waiting_message, "Waiting for other players", INFO, ptr_not_full);
         // wait until the session is full
         while (ptr_curr_sess->is_full() == false)
         {
-            cout << INFO << "Session is not full, waiting for another player to join..." << RESET << endl;
-            // wait for another player to join
             sleep(1); // sleep for 1 second to avoid busy waiting
         }
+        not_full = 0;          // set the not_full flag to 0 to stop the waiting thread
+        waiting_thread.join(); // wait for the waiting thread to finish
 
         // only player1's thread should start the game
         if (ptr_curr_sess->player1 == player)
@@ -654,10 +657,9 @@ int gameplay_multiplayer(Session *sess) // arguments TBD
     sleep(1); // sleep for 1 second for mysterious reasons
 
     bool want_to_play_on = true; // flag to check if the players want to play on
-
+#pragma region Game Loop
     while (want_to_play_on)
     {
-#pragma region Game Loop
         while (true)
         {
             DEBUG_PRINT("Inside game loop\n");

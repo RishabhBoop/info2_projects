@@ -4,11 +4,15 @@ using namespace std;
 
 int main()
 {
-    int dummy_flag = 0;
+    int dummy_flag = 0;           // for the get_response, if you do not need to set any flags
     int *dummy_ptr = &dummy_flag; // pointer to a dummy flag, used for get_response function
-    print_banner();
+    print_banner();               // print the banner for welcome
 #pragma region Init Client Socket
-    int sock = init_client_sock(); // initialize the client socket
+    int sock = init_client_sock();
+    if (sock < 0)
+    {
+        return sock; // exit if socket initialization failed
+    }
 #pragma endregion
 
     int goodbye_received = 0;                      // flag to check if goodbye message is received
@@ -26,10 +30,9 @@ int main()
 #pragma endregion
 
 #pragma region Nickname
-    // receive question: nickname from server
     try
     {
-        get_response(sock); // 1 means we expect a question response
+        get_response(sock);
     }
     catch (const runtime_error &e)
     {
@@ -50,7 +53,7 @@ int main()
     // Receive a question of choosing games from server
     try
     {
-        get_response(sock); // 1 means we expect a question response
+        get_response(sock);
     }
     catch (const runtime_error &e)
     {
@@ -71,7 +74,7 @@ int main()
     // receive question of game mode from server
     try
     {
-        get_response(sock); // 1 means we expect a question response
+        get_response(sock);
     }
     catch (const runtime_error &e)
     {
@@ -89,8 +92,9 @@ int main()
 #pragma endregion
 
 #pragma region Waiting for Players
-    thread waiting_thread(waiting_message, "Waiting for other players..."); // 1 means we expect a question/lobby message
-    while (LOBBY_MODE == 1)                                                 // wait for a maximum of 10 seconds
+    int* ptr_lobby_mode = &LOBBY_MODE; // pointer to the lobby mode variable
+    thread waiting_thread(waiting_message, "Waiting for other players", BOLDYELLOW, ptr_lobby_mode);
+    while (LOBBY_MODE == 1)
     {
         try
         {
@@ -98,17 +102,17 @@ int main()
         }
         catch (const runtime_error &e)
         {
-            // cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
+            cerr << ERROR << "Runtime error: " << e.what() << RESET << endl;
             continue;
         }
         catch (const invalid_argument &e)
         {
-            // cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
+            cerr << ERROR << "Invalid argument: " << e.what() << RESET << endl;
             continue;
         }
         catch (...)
         {
-            // cerr << ERROR << "An unexpected error occurred" << RESET << endl;
+            cerr << ERROR << "An unexpected error occurred" << RESET << endl;
             continue;
         }
     }

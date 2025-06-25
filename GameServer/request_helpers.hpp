@@ -19,7 +19,7 @@ int init_server_sock();
 
 int init_client_sock();
 
-void waiting_message(const string &);
+void waiting_message(const string &, const string &, const int*);
 
 /**
  * @brief Sends a message with an opcode and data to a socket.

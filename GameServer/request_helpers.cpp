@@ -86,6 +86,7 @@ int init_client_sock()
         {
             cout << INFO << "Using default: localhost" << RESET << endl;
             dest_ip = "127.0.0.1";
+            break;
         }
         else if (dest_ip.length() > 15 || dest_ip.length() < 7)
         {
@@ -115,7 +116,7 @@ int init_client_sock()
             }
             pos = dot_pos + 1;                         // move to the next position after the dot
             dot_pos = dest_ip_to_check.find('.', pos); // find the next dot
-            octet_count++;
+            octet_count++;                             // increment octet-counter
         }
         if (!valid)
             continue;
@@ -130,8 +131,8 @@ int init_client_sock()
     clientService.sin_family = AF_INET;        // IPv4
     clientService.sin_port = htons(PORT);      // port number
     clientService.sin_addr = ip4addr.sin_addr; // bind socket to the target address
-    cout << INFO << "Socket address set: " << dest_ip << ":" << PORT << RESET << endl;
-    // DEBUG_PRINT("Socket address set: " + dest_ip + ":" + to_string(PORT) + "\n");
+    // cout << INFO << "Socket address set: " << dest_ip << ":" << PORT << RESET << endl;
+    DEBUG_PRINT("Socket address set: " + dest_ip + ":" + to_string(PORT) + "\n");
 
     // connect to server
     int iResult = connect(sock, (struct sockaddr *)&clientService, sizeof(clientService));
@@ -530,7 +531,8 @@ void process_response(const map<string, vector<string>> parsed_response, int soc
             {
                 // if the input is 'q', send a CHECKERS_END request to the server
                 send_to(socket, "CHECKERS_MOVES", "q"); // send a surrender request
-                cout << BOLDYELLOW << "You surrendered!!\n" << RESET << endl;
+                cout << BOLDYELLOW << "You surrendered!!\n"
+                     << RESET << endl;
                 // close the socket and exit the program TODO: close the socket properly
                 // *flag_to_set = 1; // set the flag to true
                 // exit(0); // exit the program
@@ -795,15 +797,13 @@ void get_response(int sock, int *flag = nullptr, int opt = 0)
 
 void get_response(int sock)
 {
-    int opt = 0; // to remove
     string response = receive_from(sock);
     if (response.empty())
     {
         throw runtime_error("No response received from server");
     }
     map<string, vector<string>> response_structured = parsed_response(response);
-    if (opt == 0)
-        process_response(response_structured, sock, nullptr);
+    process_response(response_structured, sock, nullptr);
 }
 
 void get_response(int sock, Session *curr_sess)
@@ -827,28 +827,30 @@ string question_to_string(const string question, const vector<string> options)
     return question_str;
 }
 
-void waiting_message(const string &message)
+void waiting_message(const string &message, const string &color, const int *flag)
 {
-    while (LOBBY_MODE == 1) // wait until the lobby mode is deactivated
+    cout << color << message;
+    while (*flag == 1) // wait until the lobby mode is deactivated
     {
-        cout << "\r";
-        // Display a waiting message in the lobby
-        cout << BOLDYELLOW << message << ".";
+        cout << ".";
+        cout.flush();       // flush the output to ensure it is displayed immediately
+        usleep(500 * 1000); // sleep for 500 milliseconds
+        if (*flag == 0)
+            break; // if lobby mode is deactivated, break the loop
+
+        cout << color << "."; // add a dot to the message
+        cout.flush();              // flush the output to ensure it is displayed immediately
         usleep(500 * 1000);
-        if (LOBBY_MODE == 0) // check if the lobby mode is deactivated
-        {
-            cout << RESET << endl; // reset the color and exit the loop
-            return;
-        }
-        cout << BOLDYELLOW << "."; // add a dot to the message
-        usleep(500 * 1000);
-        if (LOBBY_MODE == 0) // check if the lobby mode is deactivated
-        {
-            cout << RESET << endl; // reset the color and exit the loop
-            return;
-        }
-        cout << BOLDYELLOW << "." << RESET << endl; // add another dot and reset the color
+        if (*flag == 0)
+            break; // if lobby mode is deactivated, break the loop
+
+        cout << color << ".";             // add another dot and reset the color
+        cout.flush();                          // flush the output to ensure it is displayed immediately
+        usleep(500 * 1000);                    // sleep for 500 milliseconds
+        cout << "\b\b\b" << "   " << "\b\b\b"; // erease the dots
     }
+    cout << RESET << endl; // reset the color and exit the loop
+    return;
 }
 
 void print_banner()
